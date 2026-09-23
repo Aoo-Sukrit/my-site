@@ -9,6 +9,12 @@
   --accent-strong: #9c4a25;
   --accent-soft: #f7e8dd;
   --border: #ece0d3;
+
+  /* การ์ด CLUB ต้องเป็นสีเดียวกับพื้นหลังที่ฝังมาในไฟล์โลโก้เป๊ะๆ ขอบรูปถึงจะ
+     หายไปกับการ์ด สามตัวนี้เลยตรึงค่าไว้ ไม่สลับตามโหมดมืด */
+  --club-cream: #faf6ea;
+  --club-ink: #3b332c;
+  --club-line: #9c4a25;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +39,9 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-border: var(--border);
+  --color-club-cream: var(--club-cream);
+  --color-club-ink: var(--club-ink);
+  --color-club-line: var(--club-line);
   --font-sans: var(--font-anuphan);
   --font-display: var(--font-plex-thai-looped);
 }
