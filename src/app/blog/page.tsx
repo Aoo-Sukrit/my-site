@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "บล็อก",
+  title: "BLOG",
 };
 
 // โพสต์ตัวอย่างไว้ดูหน้าตาก่อน ของจริงค่อยมาแทนทีหลัง

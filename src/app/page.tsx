@@ -1,41 +1,56 @@
 import Link from "next/link";
 
-import { site } from "@/lib/site";
+const secondaryLinks = [
+  { href: "/about", label: "ABOUT" },
+  { href: "/blog", label: "BLOG" },
+];
 
 export default function HomePage() {
   return (
     <div className="space-y-12">
       <section className="space-y-4">
-        <p className="text-sm text-accent">ยินดีต้อนรับ</p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          สวัสดี เข้ามานั่งเล่นได้เลย
+        <p className="text-sm tracking-[0.2em] text-accent-strong">
+          WELCOME ABOARD
+        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-5xl">
+          AOOOKULELE &amp; CO.
         </h1>
         <p className="text-muted">
-          (ข้อความตัวอย่าง) ตรงนี้ไว้แนะนำตัวสั้นๆ ว่าเราเป็นใคร ทำอะไรอยู่
-          และเว็บนี้มีอะไรให้ดูบ้าง — {site.tagline}
+          anything about aoookulele
+          <br />— made for fun, forever under construction
+        </p>
+        <p className="text-muted">
+          ตอนนี้หน้าอื่นยังว่างอยู่ กำลังทยอยเติม ถ้าเป็นทีม Beer Now Run Later
+          กดที่ CLUB ไปดูผลวิ่งเดือนนี้ได้เลย
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="space-y-4">
         <Link
-          href="/about"
-          className="rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+          href="/club"
+          className="block rounded-3xl bg-accent-strong p-6 text-background transition-opacity hover:opacity-90 sm:p-8"
         >
-          <h2 className="font-display text-lg font-medium">เกี่ยวกับผม</h2>
-          <p className="mt-1 text-sm text-muted">
-            (ข้อความตัวอย่าง) เรื่องของเรา แบบย่อๆ
-          </p>
+          <p className="text-xs tracking-[0.2em]">CLUB</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            BEER NOW RUN LATER
+          </h2>
+          <p className="mt-2">ตารางแข่งวิ่งประจำเดือนของแก๊ง</p>
+          <span className="mt-4 inline-block text-sm tracking-wide">
+            ดูตาราง →
+          </span>
         </Link>
 
-        <Link
-          href="/blog"
-          className="rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-accent"
-        >
-          <h2 className="font-display text-lg font-medium">บล็อก</h2>
-          <p className="mt-1 text-sm text-muted">
-            (ข้อความตัวอย่าง) บันทึกที่เขียนไว้เรื่อยๆ
-          </p>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          {secondaryLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-full border border-border px-4 py-2 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
