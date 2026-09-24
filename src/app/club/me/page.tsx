@@ -25,7 +25,7 @@ export default async function MePage() {
         </h1>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-2xl border border-border bg-surface p-3">
         <AvatarUploader
           avatarUrl={profile.avatar_url}
           nickname={profile.nickname}

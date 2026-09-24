@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import Avatar from "@/components/club/avatar";
+import { PortraitAvatar } from "@/components/club/avatar";
 import ClubLogo from "@/components/club-logo";
 import { SubmitButton } from "@/components/club/form-controls";
 import { requireApproved } from "@/lib/auth";
@@ -73,23 +73,33 @@ export default async function ClubPage() {
           สมาชิก <span className="text-muted">({members.length})</span>
         </h2>
 
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {members.map((member) => (
             <li
               key={member.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4"
+              className="space-y-2 rounded-2xl border border-border bg-surface p-2"
             >
-              <Avatar
-                src={member.avatar_url}
-                nickname={member.nickname}
-                size={44}
-              />
-              <span className="min-w-0 truncate">
-                {member.nickname}
+              <div className="relative">
+                <PortraitAvatar
+                  src={member.avatar_url}
+                  nickname={member.nickname}
+                />
+                {/* ป้ายแอดมินวางทับมุมรูป จะได้ไม่ไปแย่งบรรทัดใต้ชื่อ
+                    ซึ่งกันไว้ให้ระยะวิ่ง */}
                 {member.is_admin ? (
-                  <span className="text-muted"> · แอดมิน</span>
+                  <span className="absolute top-2 left-2 rounded-full bg-background/90 px-2 py-0.5 text-[11px] text-accent-strong">
+                    แอดมิน
+                  </span>
                 ) : null}
-              </span>
+              </div>
+              <div className="space-y-0.5 px-1 pb-1">
+                <p className="truncate text-sm font-medium">
+                  {member.nickname}
+                </p>
+                {/* เว้นที่ไว้ให้ระยะวิ่งประจำเดือนที่จะมาเติมทีหลัง
+                    ใส่บรรทัดจริงไว้เลยเพื่อให้ความสูงการ์ดไม่กระโดดตอนของจริงมา */}
+                <p className="truncate text-xs text-muted">ระยะเดือนนี้ —</p>
+              </div>
             </li>
           ))}
         </ul>

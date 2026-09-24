@@ -8,10 +8,11 @@ import {
 } from "@/lib/supabase/types";
 
 import { setAdminAction, setNicknameAction, setStatusAction } from "./actions";
+import ConfirmSubmit from "./confirm-submit";
 
 function StatusBadge({ profile }: { profile: ProfileWithEmail }) {
   return (
-    <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent-strong">
+    <span className="inline-block rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent-strong">
       {STATUS_LABEL[profile.status]}
       {profile.is_admin ? " · แอดมิน" : ""}
     </span>
@@ -39,6 +40,14 @@ function Identity({
   );
 }
 
+function joinedOn(profile: ProfileWithEmail) {
+  return new Date(profile.created_at).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 /** การ์ดในคิวรออนุมัติ ปุ่มใหญ่สองปุ่ม จบในหน้าจอเดียว */
 export function PendingCard({ profile }: { profile: ProfileWithEmail }) {
   return (
@@ -48,14 +57,7 @@ export function PendingCard({ profile }: { profile: ProfileWithEmail }) {
         <Identity profile={profile} />
       </div>
 
-      <p className="text-xs text-muted">
-        สมัครเมื่อ{" "}
-        {new Date(profile.created_at).toLocaleDateString("th-TH", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}
-      </p>
+      <p className="text-xs text-muted">สมัครเมื่อ {joinedOn(profile)}</p>
 
       <div className="flex flex-wrap gap-2">
         <form action={setStatusAction}>
@@ -149,6 +151,51 @@ export function MemberCard({
           {profile.is_admin ? "ถอดสิทธิ์แอดมิน" : "ตั้งเป็นแอดมิน"}
         </SubmitButton>
       </form>
+
+      {isSelf ? null : (
+        <form action={setStatusAction} className="border-t border-border pt-4">
+          <input type="hidden" name="id" value={profile.id} />
+          <input type="hidden" name="status" value="removed" />
+          <ConfirmSubmit
+            label="เอาออกจากคลับ"
+            question={`เอา ${profile.nickname} ออกจากคลับใช่ไหม จะหายจากรายชื่อสมาชิกและเข้าเว็บไม่ได้ แต่ยังกดคืนสถานะทีหลังได้`}
+            confirmLabel="ใช่ เอาออกเลย"
+            pendingLabel="กำลังเอาออก…"
+          />
+        </form>
+      )}
+    </li>
+  );
+}
+
+/** การ์ดของคนที่ถูกเอาออกไปแล้ว เหลือแค่ทางกลับเข้ามา */
+export function RemovedCard({ profile }: { profile: ProfileWithEmail }) {
+  return (
+    <li className="space-y-4 rounded-2xl border border-border bg-background p-4 opacity-80">
+      <div className="flex items-center gap-3">
+        <Avatar src={profile.avatar_url} nickname={profile.nickname} />
+        <Identity profile={profile} />
+      </div>
+
+      <p className="text-xs text-muted">เคยสมัครเมื่อ {joinedOn(profile)}</p>
+
+      <div className="flex flex-wrap gap-2">
+        <form action={setStatusAction}>
+          <input type="hidden" name="id" value={profile.id} />
+          <input type="hidden" name="status" value="approved" />
+          <SubmitButton pendingLabel="กำลังคืนสถานะ…">
+            คืนสถานะเป็นสมาชิก
+          </SubmitButton>
+        </form>
+
+        <form action={setStatusAction}>
+          <input type="hidden" name="id" value={profile.id} />
+          <input type="hidden" name="status" value="pending" />
+          <SubmitButton variant="ghost" pendingLabel="กำลังย้าย…">
+            ย้ายกลับไปคิวรออนุมัติ
+          </SubmitButton>
+        </form>
+      </div>
     </li>
   );
 }

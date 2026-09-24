@@ -16,21 +16,30 @@ export default async function PendingPage() {
   // proxy กันไว้ชั้นหนึ่งแล้ว แต่เช็กซ้ำเผื่อสถานะเพิ่งเปลี่ยน
   if (viewer.profile.status === "approved") redirect(CLUB_ROUTES.home);
 
-  const blocked = viewer.profile.status === "blocked";
+  const status = viewer.profile.status;
+  const removed = status === "removed";
+  const blocked = status === "blocked";
+  const shutOut = removed || blocked;
 
   return (
     <div className="mx-auto max-w-md space-y-8">
       <section className="space-y-3">
         <p className="text-sm tracking-[0.2em] text-accent-strong">
-          {blocked ? "ถูกระงับ" : "รออนุมัติ"}
+          {removed ? "ออกจากคลับแล้ว" : blocked ? "ถูกระงับ" : "รออนุมัติ"}
         </p>
         <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-          {blocked ? "บัญชีนี้ถูกระงับอยู่" : `สวัสดี ${viewer.profile.nickname}`}
+          {removed
+            ? "ไม่ได้อยู่ในคลับแล้ว"
+            : blocked
+              ? "บัญชีนี้ถูกระงับอยู่"
+              : `สวัสดี ${viewer.profile.nickname}`}
         </h1>
         <p className="text-muted">
-          {blocked
-            ? "ถ้าคิดว่าผิดพลาด ทักแอดมินในกลุ่มได้เลย"
-            : "สมัครเรียบร้อยแล้ว ตอนนี้รอแอดมินกดอนุมัติอีกนิดเดียว พอผ่านแล้วจะเข้าดูตารางแข่งกับรายชื่อสมาชิกได้"}
+          {removed
+            ? "บัญชีนี้ถูกเอาออกจากคลับแล้ว ถ้าอยากกลับเข้ามา ทักแอดมินในกลุ่มได้เลย"
+            : blocked
+              ? "ถ้าคิดว่าผิดพลาด ทักแอดมินในกลุ่มได้เลย"
+              : "สมัครเรียบร้อยแล้ว ตอนนี้รอแอดมินกดอนุมัติอีกนิดเดียว พอผ่านแล้วจะเข้าดูตารางแข่งกับรายชื่อสมาชิกได้"}
         </p>
       </section>
 
@@ -41,9 +50,9 @@ export default async function PendingPage() {
         <p className="break-all">
           <span className="text-muted">อีเมล</span> {viewer.email ?? "—"}
         </p>
-        <p className="text-muted">
-          ลองรีเฟรชหน้านี้อีกทีหลังแอดมินกดอนุมัติ
-        </p>
+        {shutOut ? null : (
+          <p className="text-muted">ลองรีเฟรชหน้านี้อีกทีหลังแอดมินกดอนุมัติ</p>
+        )}
       </section>
 
       <form action={logoutAction}>

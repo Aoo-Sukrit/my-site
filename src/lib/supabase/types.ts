@@ -1,4 +1,9 @@
-export const PROFILE_STATUSES = ["pending", "approved", "blocked"] as const;
+export const PROFILE_STATUSES = [
+  "pending",
+  "approved",
+  "blocked",
+  "removed",
+] as const;
 
 export type ProfileStatus = (typeof PROFILE_STATUSES)[number];
 
@@ -29,7 +34,13 @@ export const STATUS_LABEL: Record<ProfileStatus, string> = {
   pending: "รออนุมัติ",
   approved: "สมาชิก",
   blocked: "ถูกระงับ",
+  removed: "เอาออกจากคลับแล้ว",
 };
+
+/** สถานะที่ยังไม่ถือว่าจบเรื่อง แอดมินอาจต้องกลับมาจัดการอีก */
+export function isInactiveStatus(status: ProfileStatus) {
+  return status === "blocked" || status === "removed";
+}
 
 export function isProfileStatus(value: unknown): value is ProfileStatus {
   return (

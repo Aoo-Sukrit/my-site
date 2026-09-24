@@ -7,7 +7,7 @@ import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
 
-import { MemberCard, PendingCard } from "./member-card";
+import { MemberCard, PendingCard, RemovedCard } from "./member-card";
 
 export const metadata: Metadata = {
   title: "แอดมิน",
@@ -34,7 +34,10 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
   // ฟังก์ชันนี้ประกาศเป็น returns setof public.profiles จึงได้อาร์เรย์กลับมาจริง
   const profiles = (data ?? []) as ProfileWithEmail[];
   const pending = profiles.filter((p) => p.status === "pending");
-  const rest = profiles.filter((p) => p.status !== "pending");
+  const removed = profiles.filter((p) => p.status === "removed");
+  const active = profiles.filter(
+    (p) => p.status === "approved" || p.status === "blocked",
+  );
 
   return (
     <div className="space-y-10">
@@ -70,14 +73,14 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-medium">
-          สมาชิกทั้งหมด <span className="text-muted">({rest.length})</span>
+          สมาชิกทั้งหมด <span className="text-muted">({active.length})</span>
         </h2>
 
-        {rest.length === 0 ? (
+        {active.length === 0 ? (
           <p className="text-sm text-muted">ยังไม่มีสมาชิกที่อนุมัติแล้ว</p>
         ) : (
           <ul className="space-y-3">
-            {rest.map((profile) => (
+            {active.map((profile) => (
               <MemberCard
                 key={profile.id}
                 profile={profile}
@@ -87,6 +90,23 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
           </ul>
         )}
       </section>
+
+      {removed.length > 0 ? (
+        <section className="space-y-4">
+          <h2 className="font-display text-lg font-medium">
+            เอาออกจากคลับแล้ว{" "}
+            <span className="text-muted">({removed.length})</span>
+          </h2>
+          <p className="text-sm text-muted">
+            คนกลุ่มนี้ไม่โผล่ในรายชื่อสมาชิกและเข้าเว็บไม่ได้ เห็นได้เฉพาะหน้านี้
+          </p>
+          <ul className="space-y-3">
+            {removed.map((profile) => (
+              <RemovedCard key={profile.id} profile={profile} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <Link
         href="/club"
