@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ยกเว้นไฟล์ตัวอย่าง ที่มีแต่ชื่อตัวแปร ไม่มีค่าจริง จึงตั้งใจให้ขึ้น git
+!.env.example
 
 # vercel
 .vercel
