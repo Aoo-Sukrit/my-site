@@ -11,6 +11,46 @@ import { thaiMonthLabel } from "./date";
  */
 export const BACKDATE_GRACE_DAYS = 3;
 
+/**
+ * ขั้นต่ำและขั้นสูงของระยะต่อหนึ่งรายการ
+ * ต้องตรงกับ constraint runs_distance_range ใน supabase/005_distance_range.sql
+ *
+ * ขั้นต่ำกันคนกรอกเล่นๆ ทีละ 0.01 จนตารางรก
+ * ขั้นสูงกันพิมพ์ผิด เช่นตั้งใจพิมพ์ 7.00 แต่พิมพ์ 700 ซึ่งจะทำให้กระดาน
+ * เพี้ยนทั้งเดือนโดยไม่มีใครทันสังเกต
+ */
+export const DISTANCE_MIN_KM = 0.5;
+export const DISTANCE_MAX_KM = 200;
+
+export type DistanceCheck = { ok: true } | { ok: false; reason: string };
+
+export function checkDistance(value: string | number): DistanceCheck {
+  const distance = typeof value === "number" ? value : Number(value);
+
+  if (typeof value === "string" && value.trim() === "") {
+    return { ok: false, reason: "ใส่ระยะที่วิ่งด้วย" };
+  }
+  if (!Number.isFinite(distance)) {
+    return { ok: false, reason: "ระยะต้องเป็นตัวเลข" };
+  }
+  if (distance < DISTANCE_MIN_KM) {
+    return {
+      ok: false,
+      reason:
+        "ระยะต้องอย่างน้อย 0.5 กม. ถ้าวิ่งสั้นกว่านี้ไม่ต้องกรอกก็ได้",
+    };
+  }
+  if (distance > DISTANCE_MAX_KM) {
+    return {
+      ok: false,
+      reason:
+        "ระยะเกิน 200 กม. ต่อครั้ง เช็กอีกทีว่าพิมพ์ถูกไหม ถ้าวิ่งจริงให้แอดมินใส่ให้",
+    };
+  }
+
+  return { ok: true };
+}
+
 /** "2026-09-15" -> "2026-09" */
 export function monthKeyOf(isoDate: string): string {
   return isoDate.slice(0, 7);

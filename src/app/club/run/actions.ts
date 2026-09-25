@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireApproved } from "@/lib/auth";
 import { bangkokToday, thaiMonthLabel } from "@/lib/date";
-import { checkEntryWindow } from "@/lib/run-rules";
+import { checkDistance, checkEntryWindow } from "@/lib/run-rules";
 import { getRoundForDate } from "@/lib/runs";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -22,18 +22,14 @@ export type RunFormValues = {
 
 export type RunActionResult = { error: string | null; ok: boolean };
 
-const MAX_DISTANCE_KM = 9999.99;
 const MAX_NOTE_LENGTH = 300;
 
 /** ตรวจช่องที่ไม่เกี่ยวกับวันที่ ส่วนวันที่แยกไปตามบริบทของแต่ละ action */
 function validateFields(values: RunFormValues): string | null {
-  const distance = Number(values.distanceKm);
-  if (!Number.isFinite(distance) || distance <= 0) {
-    return "ระยะต้องมากกว่า 0";
-  }
-  if (distance > MAX_DISTANCE_KM) {
-    return "ระยะเยอะเกินไป ลองเช็กตัวเลขอีกที";
-  }
+  // กติกาเดียวกับที่ฟอร์มใช้ และกับ constraint runs_distance_range
+  // ในฐานข้อมูล ตรงนี้มีไว้ให้ข้อความอ่านง่าย ตัวบังคับจริงอยู่ฝั่งฐานข้อมูล
+  const distance = checkDistance(values.distanceKm);
+  if (!distance.ok) return distance.reason;
   if (!isRunSource(values.source)) {
     return "เลือกแอปที่มาก่อน";
   }

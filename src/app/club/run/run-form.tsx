@@ -6,7 +6,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@/components/club/alert";
 import { thaiMonthLabel } from "@/lib/date";
 import { MAX_UPLOAD_BYTES, shrinkToJpeg } from "@/lib/image";
-import { checkEntryWindow, monthRange } from "@/lib/run-rules";
+import {
+  DISTANCE_MAX_KM,
+  DISTANCE_MIN_KM,
+  checkDistance,
+  checkEntryWindow,
+  monthRange,
+} from "@/lib/run-rules";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { RUN_SOURCES } from "@/lib/supabase/types";
 
@@ -80,6 +86,16 @@ export default function RunForm({
       : { ok: false as const, message: check.reason };
   }, [mode, lockedMonth, ranOn, today]);
 
+  /** บอกทันทีที่พิมพ์ระยะว่าเข้ากติกาไหม ไม่ต้องรอกดบันทึกแล้วค่อยเด้ง */
+  const distanceState = useMemo(() => {
+    const check = checkDistance(distanceKm);
+    return {
+      ok: check.ok,
+      // ยังไม่พิมพ์อะไรเลยก็ไม่ต้องขึ้นข้อความเตือน ปล่อยให้ดูสะอาดไว้ก่อน
+      message: check.ok || distanceKm.trim() === "" ? null : check.reason,
+    };
+  }, [distanceKm]);
+
   const dateBounds = useMemo(() => {
     if (mode === "edit" && lockedMonth) {
       const range = monthRange(lockedMonth.slice(0, 7));
@@ -130,6 +146,10 @@ export default function RunForm({
 
     try {
       if (!dateState.ok) throw new Error(dateState.message);
+
+      const distance = checkDistance(distanceKm);
+      if (!distance.ok) throw new Error(distance.reason);
+
       if (mode === "new" && !picked) {
         throw new Error("แนบรูปหลักฐานก่อนนะ");
       }
@@ -191,14 +211,20 @@ export default function RunForm({
           type="number"
           inputMode="decimal"
           step="0.01"
-          min="0.01"
-          max="9999.99"
+          min={DISTANCE_MIN_KM}
+          max={DISTANCE_MAX_KM}
           value={distanceKm}
           required
           placeholder="เช่น 5.20"
           onChange={(event) => setDistanceKm(event.target.value)}
           className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-accent"
         />
+        <span
+          className={`block text-xs ${distanceState.message ? "text-club-line" : "text-muted"}`}
+        >
+          {distanceState.message ??
+            `ต่อหนึ่งรายการ ${DISTANCE_MIN_KM} ถึง ${DISTANCE_MAX_KM} กม.`}
+        </span>
       </label>
 
       <fieldset className="space-y-2">
@@ -286,7 +312,7 @@ export default function RunForm({
 
       <button
         type="submit"
-        disabled={busy || !dateState.ok}
+        disabled={busy || !dateState.ok || !distanceState.ok}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-club-line px-5 text-base font-medium tracking-wide text-background transition hover:opacity-90 disabled:opacity-60"
       >
         {busy
