@@ -48,3 +48,73 @@ export function isProfileStatus(value: unknown): value is ProfileStatus {
     (PROFILE_STATUSES as readonly string[]).includes(value)
   );
 }
+
+// ---------------------------------------------------------------------------
+//  ผลวิ่ง (003_runs.sql)
+// ---------------------------------------------------------------------------
+
+export type RoundStatus = "open" | "closed";
+
+export type Round = {
+  id: string;
+  /** วันที่ 1 ของเดือนนั้น เช่น 2026-09-01 */
+  month: string;
+  status: RoundStatus;
+  created_at: string;
+};
+
+export type Run = {
+  id: string;
+  profile_id: string;
+  round_id: string;
+  ran_on: string;
+  /** PostgREST ส่ง numeric กลับมาเป็น string เพื่อไม่ให้ความละเอียดหาย */
+  distance_km: string;
+  source: string;
+  /** ที่อยู่ไฟล์ในบัคเก็ต proofs ไม่ใช่ URL เต็ม ต้องขอ signed url ก่อนแสดง */
+  proof_url: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RunEdit = {
+  id: string;
+  run_id: string;
+  profile_id: string | null;
+  edited_by: string | null;
+  action: "update" | "delete";
+  old_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
+  edited_at: string;
+};
+
+/** หนึ่งแถวบนกระดาน มาจากฟังก์ชัน month_leaderboard() */
+export type LeaderboardRow = {
+  member_id: string;
+  nickname: string;
+  avatar_url: string | null;
+  is_admin: boolean;
+  total_km: string;
+  run_count: number;
+  rank_no: number;
+};
+
+/** แอปที่มาของผลวิ่ง เรียงตามที่เพื่อนๆ ใช้กันบ่อย */
+export const RUN_SOURCES = [
+  "Garmin",
+  "Strava",
+  "Suunto",
+  "COROS",
+  "Mi Fitness",
+  "Samsung Health",
+  "อื่นๆ",
+] as const;
+
+export type RunSource = (typeof RUN_SOURCES)[number];
+
+export function isRunSource(value: unknown): value is RunSource {
+  return (
+    typeof value === "string" && (RUN_SOURCES as readonly string[]).includes(value)
+  );
+}

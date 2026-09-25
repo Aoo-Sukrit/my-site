@@ -1,4 +1,5 @@
 import Avatar from "@/components/club/avatar";
+import ConfirmSubmit from "@/components/club/confirm-submit";
 import { SubmitButton } from "@/components/club/form-controls";
 import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/club-limits";
 import {
@@ -8,7 +9,6 @@ import {
 } from "@/lib/supabase/types";
 
 import { setAdminAction, setNicknameAction, setStatusAction } from "./actions";
-import ConfirmSubmit from "./confirm-submit";
 
 function StatusBadge({ profile }: { profile: ProfileWithEmail }) {
   return (
