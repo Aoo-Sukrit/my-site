@@ -30,7 +30,7 @@ export async function signupAction(
   }
   if (nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
     return {
-      error: `ฉายาต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`,
+      error: `ชื่อต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`,
       notice: null,
     };
   }
@@ -43,7 +43,7 @@ export async function signupAction(
 
   const supabase = await createSupabaseServerClient();
 
-  // เช็กฉายาซ้ำก่อน จะได้บอกตรงๆ แทนที่จะปล่อยให้ไปพังที่ trigger
+  // เช็กชื่อซ้ำก่อน จะได้บอกตรงๆ แทนที่จะปล่อยให้ไปพังที่ trigger
   // แล้วได้ error งงๆ กลับมา (ตัวกันซ้ำจริงคือ unique index ในฐานข้อมูล)
   const { data: available, error: checkError } = await supabase.rpc(
     "nickname_available",
@@ -51,7 +51,7 @@ export async function signupAction(
   );
 
   if (!checkError && available === false) {
-    return { error: "ฉายานี้มีคนใช้แล้ว ลองตั้งใหม่", notice: null };
+    return { error: "ชื่อนี้มีคนใช้แล้ว ลองตั้งใหม่", notice: null };
   }
 
   const requestHeaders = await headers();
@@ -63,7 +63,7 @@ export async function signupAction(
     email,
     password,
     options: {
-      // ฉายาเดินทางไปกับ raw_user_meta_data แล้ว trigger handle_new_user
+      // ชื่อเดินทางไปกับ raw_user_meta_data แล้ว trigger handle_new_user
       // ใน schema.sql จะหยิบไปใส่ตาราง profiles ให้
       data: { nickname },
       emailRedirectTo: `${origin}/club/auth/callback`,

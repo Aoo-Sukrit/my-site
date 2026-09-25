@@ -80,7 +80,7 @@ export async function setNicknameAction(formData: FormData) {
 
   if (!id) backTo("ไม่รู้ว่าจะแก้ของใคร", true);
   if (nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
-    backTo(`ฉายาต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`, true);
+    backTo(`ชื่อต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`, true);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -92,5 +92,5 @@ export async function setNicknameAction(formData: FormData) {
   if (error) backTo(toThaiDbError(error), true);
 
   revalidatePath("/club/admin");
-  backTo("เปลี่ยนฉายาแล้ว", false);
+  backTo("เปลี่ยนชื่อแล้ว", false);
 }

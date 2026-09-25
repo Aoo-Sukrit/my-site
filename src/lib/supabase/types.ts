@@ -10,6 +10,8 @@ export type ProfileStatus = (typeof PROFILE_STATUSES)[number];
 export type Profile = {
   id: string;
   nickname: string;
+  caption: string | null;
+  about: string | null;
   avatar_url: string | null;
   status: ProfileStatus;
   is_admin: boolean;
@@ -25,7 +27,7 @@ export type Profile = {
  * จะตอบ permission denied for column email
  */
 export const PROFILE_COLUMNS =
-  "id, nickname, avatar_url, status, is_admin, created_at, updated_at";
+  "id, nickname, caption, about, avatar_url, status, is_admin, created_at, updated_at";
 
 /** เฉพาะหน้าแอดมิน ได้มาจากฟังก์ชัน admin_member_list() เท่านั้น */
 export type ProfileWithEmail = Profile & { email: string | null };
@@ -93,6 +95,7 @@ export type RunEdit = {
 export type LeaderboardRow = {
   member_id: string;
   nickname: string;
+  caption: string | null;
   avatar_url: string | null;
   is_admin: boolean;
   total_km: string;

@@ -91,6 +91,9 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
             {member.nickname}
             {isSelf ? <span className="text-muted"> (คุณ)</span> : null}
           </h1>
+          {member.caption ? (
+            <p className="text-sm text-muted">{member.caption}</p>
+          ) : null}
           <p className="text-3xl font-semibold text-accent-strong">
             {formatKm(standing?.total_km ?? 0)}{" "}
             <span className="text-base font-normal text-muted">กม.</span>
@@ -102,6 +105,23 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
           </p>
         </div>
       </section>
+
+      {member.about ? (
+        <section className="space-y-2 rounded-2xl border border-border bg-surface p-5">
+          <h2 className="font-display text-lg font-medium">เกี่ยวกับ</h2>
+          {/* whitespace-pre-line เพื่อให้การขึ้นบรรทัดที่เจ้าตัวพิมพ์ไว้ยังอยู่ */}
+          <p className="whitespace-pre-line text-muted">{member.about}</p>
+        </section>
+      ) : isSelf ? (
+        <section className="rounded-2xl border border-dashed border-border p-5">
+          <p className="text-sm text-muted">
+            ยังไม่ได้เขียนอะไรเกี่ยวกับตัวเองเลย{" "}
+            <Link href="/club/me" className="text-accent-strong underline">
+              เขียนเลย
+            </Link>
+          </p>
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-medium">ผลวิ่งเดือนนี้</h2>

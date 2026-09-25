@@ -22,9 +22,36 @@ export const STORY_HEIGHT = 1920;
 /** จำนวนแถวที่ยัดลงในหน้าได้พอดี เกินกว่านี้สรุปเป็นบรรทัดเดียว */
 const MAX_ROWS = 8;
 
+/**
+ * ความสูงของกล่องรูปในโพเดียม เท่ากันทั้งสามช่องโดยตั้งใจ
+ *
+ * ถ้าปล่อยให้แต่ละช่องสูงตามเนื้อหา คนที่ไม่มีแคปชั่นจะมีคอลัมน์เตี้ยกว่า
+ * พอจัดชิดล่างรูปของคนนั้นจะถูกดันต่ำลงมา แถวโพเดียมเลยดูเบี้ยว
+ * ตรึงความสูงกล่องรูปไว้เท่ากัน แล้ววางรูปชิดล่างในกล่อง
+ * ชื่อกับระยะของทั้งสามช่องจึงเริ่มที่ระดับเดียวกันเสมอ
+ */
+const PODIUM_PHOTO_BOX = 400;
+
+/**
+ * ตัดข้อความให้สั้นพอที่จะไม่ล้นกรอบ
+ *
+ * satori ทำ text-overflow: ellipsis ให้ไม่ได้ ต้องตัดเป็นตัวอักษรเอาเองก่อน
+ * ส่งเข้าไปวาด ตัวเลขเพดานได้มาจากความกว้างของกล่องหารด้วยความกว้างเฉลี่ย
+ * ของตัวอักษรไทย เผื่อไว้พอสมควรเพราะแต่ละตัวกว้างไม่เท่ากัน
+ */
+function truncate(text: string | null, max: number): string | null {
+  if (!text) return null;
+
+  const clean = text.trim();
+  if (!clean) return null;
+
+  return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`;
+}
+
 export type StoryEntry = {
   memberId: string;
   nickname: string;
+  caption: string | null;
   avatar: string | null;
   totalKm: string;
   runCount: number;
@@ -90,6 +117,7 @@ function Photo({
 function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
   const width = first ? 300 : 236;
   const height = first ? 400 : 314;
+  const caption = truncate(entry.caption, first ? 28 : 22);
 
   return (
     <div
@@ -100,35 +128,43 @@ function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
         width,
       }}
     >
-      <div style={{ display: "flex", position: "relative" }}>
-        <Photo
-          avatar={entry.avatar}
-          nickname={entry.nickname}
-          width={width}
-          height={height}
-          radius={28}
-          fontSize={first ? 120 : 96}
-        />
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            bottom: -26,
-            left: width / 2 - 26,
-            width: 52,
-            height: 52,
-            borderRadius: 26,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: first ? ACCENT : CREAM,
-            border: `3px solid ${ACCENT}`,
-            color: first ? CREAM : ACCENT,
-            fontFamily: "PlexThai",
-            fontWeight: 600,
-            fontSize: 28,
-          }}
-        >
-          {entry.rankNo}
+      <div
+        style={{
+          display: "flex",
+          height: PODIUM_PHOTO_BOX,
+          alignItems: "flex-end",
+        }}
+      >
+        <div style={{ display: "flex", position: "relative" }}>
+          <Photo
+            avatar={entry.avatar}
+            nickname={entry.nickname}
+            width={width}
+            height={height}
+            radius={28}
+            fontSize={first ? 120 : 96}
+          />
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              bottom: -26,
+              left: width / 2 - 26,
+              width: 52,
+              height: 52,
+              borderRadius: 26,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: first ? ACCENT : CREAM,
+              border: `3px solid ${ACCENT}`,
+              color: first ? CREAM : ACCENT,
+              fontFamily: "PlexThai",
+              fontWeight: 600,
+              fontSize: 28,
+            }}
+          >
+            {entry.rankNo}
+          </div>
         </div>
       </div>
 
@@ -155,11 +191,37 @@ function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
       >
         {formatKm(entry.totalKm)} กม.
       </div>
+
+      {caption ? (
+        <div
+          style={{
+            display: "flex",
+            marginTop: 4,
+            width,
+            justifyContent: "center",
+            textAlign: "center",
+            color: MUTED,
+            fontSize: 20,
+            lineHeight: 1.3,
+          }}
+        >
+          {caption}
+        </div>
+      ) : null}
     </div>
   );
 }
 
 function ListRow({ entry }: { entry: StoryEntry }) {
+  // แคปชั่นมาก่อน ถ้าไม่มีค่อยบอกจำนวนครั้ง ไม่มีทั้งคู่ก็ไม่ต้องมีบรรทัดรอง
+  const secondary =
+    truncate(entry.caption, 44) ??
+    (entry.idle
+      ? "ยังไม่ได้กรอก"
+      : entry.runCount > 0
+        ? `${entry.runCount} ครั้ง`
+        : null);
+
   return (
     <div
       style={{
@@ -206,9 +268,11 @@ function ListRow({ entry }: { entry: StoryEntry }) {
         <div style={{ display: "flex", color: INK, fontSize: 30, fontWeight: 600 }}>
           {entry.nickname}
         </div>
-        <div style={{ display: "flex", color: MUTED, fontSize: 22 }}>
-          {entry.idle ? "ยังไม่ได้กรอก" : `${entry.runCount} ครั้ง`}
-        </div>
+        {secondary ? (
+          <div style={{ display: "flex", color: MUTED, fontSize: 22 }}>
+            {secondary}
+          </div>
+        ) : null}
       </div>
 
       <div
@@ -319,7 +383,7 @@ export function StoryCard({
           style={{
             display: "flex",
             flexDirection: "row",
-            alignItems: "flex-end",
+            alignItems: "flex-start",
             justifyContent: "center",
             marginTop: 44,
             gap: 24,

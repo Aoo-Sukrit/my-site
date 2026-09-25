@@ -7,7 +7,7 @@ import { STATUS_LABEL } from "@/lib/supabase/types";
 
 import { logoutAction } from "../actions";
 import AvatarUploader from "./avatar-uploader";
-import NicknameForm from "./nickname-form";
+import ProfileForm from "./profile-form";
 
 export const metadata: Metadata = {
   title: "โปรไฟล์ของฉัน",
@@ -33,7 +33,11 @@ export default async function MePage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <NicknameForm nickname={profile.nickname} />
+        <ProfileForm
+          nickname={profile.nickname}
+          caption={profile.caption ?? ""}
+          about={profile.about ?? ""}
+        />
       </section>
 
       <section className="space-y-2 rounded-2xl border border-border p-5 text-sm">

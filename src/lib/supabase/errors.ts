@@ -22,7 +22,7 @@ export function toThaiAuthError(error: { message: string; code?: string }) {
     return "ส่งอีเมลถี่เกินไป รอสักครู่แล้วลองใหม่";
   }
   if (message.includes("database error saving new user")) {
-    return "สมัครไม่สำเร็จ มักเกิดจากฉายาซ้ำ ลองเปลี่ยนฉายาแล้วลองใหม่ (ถ้ายังไม่ได้ แปลว่า supabase/schema.sql ยังไม่ถูกรัน)";
+    return "สมัครไม่สำเร็จ มักเกิดจากชื่อซ้ำ ลองเปลี่ยนชื่อแล้วลองใหม่ (ถ้ายังไม่ได้ แปลว่า supabase/schema.sql ยังไม่ถูกรัน)";
   }
   if (message.includes("fetch failed")) {
     return "ต่อกับ Supabase ไม่ได้ ลองเช็กค่าใน .env.local";
@@ -35,7 +35,7 @@ export function toThaiDbError(error: { message: string; code?: string }) {
   const code = error.code ?? "";
 
   if (code === "23505") {
-    return "ฉายานี้มีคนใช้แล้ว ลองตั้งใหม่";
+    return "ชื่อนี้มีคนใช้แล้ว ลองตั้งใหม่";
   }
   if (code === "42501") {
     // trigger ฝั่งฐานข้อมูลโยนข้อความไทยที่อธิบายเหตุผลมาเองอยู่แล้ว

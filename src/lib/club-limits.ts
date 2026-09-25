@@ -8,3 +8,7 @@
 export const NICKNAME_MIN = 2;
 export const NICKNAME_MAX = 24;
 export const PASSWORD_MIN = 8;
+
+/** ต้องตรงกับ constraint ใน supabase/004_profile_fields.sql */
+export const CAPTION_MAX = 60;
+export const ABOUT_MAX = 500;

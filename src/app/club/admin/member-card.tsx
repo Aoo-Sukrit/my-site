@@ -19,7 +19,7 @@ function StatusBadge({ profile }: { profile: ProfileWithEmail }) {
   );
 }
 
-/** ฉายากับอีเมลคู่กัน ไว้ยืนยันว่าคนที่กำลังจะกดอนุมัติคือใคร */
+/** ชื่อกับอีเมลคู่กัน ไว้ยืนยันว่าคนที่กำลังจะกดอนุมัติคือใคร */
 function Identity({
   profile,
   suffix,
@@ -78,7 +78,7 @@ export function PendingCard({ profile }: { profile: ProfileWithEmail }) {
   );
 }
 
-/** การ์ดในรายชื่อสมาชิกทั้งหมด แก้ได้ทั้งฉายา สถานะ และสิทธิ์แอดมิน */
+/** การ์ดในรายชื่อสมาชิกทั้งหมด แก้ได้ทั้งชื่อ สถานะ และสิทธิ์แอดมิน */
 export function MemberCard({
   profile,
   isSelf,
@@ -101,7 +101,7 @@ export function MemberCard({
       <form action={setNicknameAction} className="space-y-2">
         <input type="hidden" name="id" value={profile.id} />
         <label className="block space-y-1.5">
-          <span className="text-xs text-muted">ฉายา</span>
+          <span className="text-xs text-muted">ชื่อ</span>
           <input
             name="nickname"
             defaultValue={profile.nickname}
@@ -112,7 +112,7 @@ export function MemberCard({
           />
         </label>
         <SubmitButton variant="ghost" pendingLabel="กำลังบันทึก…">
-          บันทึกฉายา
+          บันทึกชื่อ
         </SubmitButton>
       </form>
 

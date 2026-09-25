@@ -55,6 +55,12 @@ function PodiumSlot({ row, first }: { row: LeaderboardRow; first: boolean }) {
         {formatKm(row.total_km)}
         <span className="text-xs font-normal text-muted"> กม.</span>
       </p>
+      {row.caption ? (
+        // line-clamp-2 กันแคปชั่นยาวดันการ์ดสูงจนโพเดียมเบี้ยว
+        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">
+          {row.caption}
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -107,6 +113,13 @@ export function RankList({
   );
 }
 
+function secondaryLine(row: LeaderboardRow, idle?: boolean): string | null {
+  if (row.caption) return row.caption;
+  if (idle) return "ยังไม่ได้กรอก";
+  if (row.run_count > 0) return `${row.run_count} ครั้ง`;
+  return null;
+}
+
 function RankRow({ row, idle }: { row: LeaderboardRow; idle?: boolean }) {
   return (
     <li>
@@ -128,9 +141,13 @@ function RankRow({ row, idle }: { row: LeaderboardRow; idle?: boolean }) {
           <span className="block truncate text-sm font-medium">
             {row.nickname}
           </span>
-          <span className="block text-xs text-muted">
-            {idle ? "ยังไม่ได้กรอก" : `${row.run_count} ครั้ง`}
-          </span>
+          {/* แคปชั่นมาก่อน ถ้าไม่มีค่อยบอกจำนวนครั้งแทน
+              ไม่มีทั้งคู่ก็ไม่ต้องมีบรรทัดรองเลย */}
+          {secondaryLine(row, idle) ? (
+            <span className="block truncate text-xs text-muted">
+              {secondaryLine(row, idle)}
+            </span>
+          ) : null}
         </span>
 
         <span className="shrink-0 text-right font-display text-sm font-semibold">

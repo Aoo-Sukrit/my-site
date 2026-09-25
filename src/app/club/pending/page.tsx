@@ -45,7 +45,7 @@ export default async function PendingPage() {
 
       <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm">
         <p>
-          <span className="text-muted">ฉายา</span> {viewer.profile.nickname}
+          <span className="text-muted">ชื่อ</span> {viewer.profile.nickname}
         </p>
         <p className="break-all">
           <span className="text-muted">อีเมล</span> {viewer.email ?? "—"}

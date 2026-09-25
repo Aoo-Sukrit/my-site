@@ -71,6 +71,7 @@ export async function GET() {
   const entries: StoryEntry[] = ordered.map((row, index) => ({
     memberId: row.member_id,
     nickname: row.nickname,
+    caption: row.caption,
     avatar: avatars[index],
     totalKm: row.total_km,
     runCount: row.run_count,

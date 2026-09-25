@@ -25,7 +25,7 @@ export default function SignupForm() {
   return (
     <form action={formAction} className="space-y-4">
       <Field
-        label="ฉายา"
+        label="ชื่อ"
         name="nickname"
         required
         minLength={NICKNAME_MIN}

@@ -3,40 +3,58 @@
 import { revalidatePath } from "next/cache";
 
 import { requireApproved } from "@/lib/auth";
-import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/club-limits";
+import {
+  ABOUT_MAX,
+  CAPTION_MAX,
+  NICKNAME_MAX,
+  NICKNAME_MIN,
+} from "@/lib/club-limits";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { readSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type NicknameState = { error: string | null; ok: boolean };
+export type ProfileState = { error: string | null; ok: boolean };
 
-export async function updateNicknameAction(
-  _prev: NicknameState,
+export async function updateProfileAction(
+  _prev: ProfileState,
   formData: FormData,
-): Promise<NicknameState> {
+): Promise<ProfileState> {
   const viewer = await requireApproved();
+
   const nickname = String(formData.get("nickname") ?? "").trim();
+  const caption = String(formData.get("caption") ?? "").trim();
+  const about = String(formData.get("about") ?? "").trim();
 
   if (nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
     return {
-      error: `ฉายาต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`,
+      error: `ชื่อต้องยาว ${NICKNAME_MIN} ถึง ${NICKNAME_MAX} ตัวอักษร`,
       ok: false,
     };
   }
-
-  if (nickname === viewer.profile.nickname) {
-    return { error: null, ok: true };
+  // นับเป็นตัวอักษรเหมือนกับ char_length ฝั่งฐานข้อมูล ไม่ใช่นับไบต์
+  if (caption.length > CAPTION_MAX) {
+    return { error: `แคปชั่นยาวเกิน ${CAPTION_MAX} ตัวอักษร`, ok: false };
+  }
+  if (about.length > ABOUT_MAX) {
+    return { error: `เกี่ยวกับยาวเกิน ${ABOUT_MAX} ตัวอักษร`, ok: false };
   }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ nickname })
+    .update({
+      nickname,
+      // เก็บช่องว่างเป็น null ไม่ใช่สตริงว่าง หน้าอื่นจะได้เช็กง่ายว่ามีไหม
+      caption: caption || null,
+      about: about || null,
+    })
     .eq("id", viewer.userId);
 
   if (error) return { error: toThaiDbError(error), ok: false };
 
+  revalidatePath("/club");
   revalidatePath("/club/me");
+  revalidatePath(`/club/member/${viewer.userId}`);
   revalidatePath("/club/admin");
   return { error: null, ok: true };
 }
@@ -69,7 +87,9 @@ export async function saveAvatarUrlAction(
 
   if (error) return { error: toThaiDbError(error), ok: false };
 
+  revalidatePath("/club");
   revalidatePath("/club/me");
+  revalidatePath(`/club/member/${viewer.userId}`);
   revalidatePath("/club/admin");
   return { error: null, ok: true };
 }
