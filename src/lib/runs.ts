@@ -7,6 +7,7 @@ import type {
 } from "./supabase/types";
 
 export const PROOF_BUCKET = "proofs";
+export const AVATAR_BUCKET = "avatars";
 export const EDIT_WINDOW_HOURS = 24;
 
 /**
@@ -79,13 +80,33 @@ export async function getMemberEdits(memberId: string): Promise<RunEdit[]> {
 export async function signProofUrls(
   paths: string[],
 ): Promise<Map<string, string>> {
+  return signStorageUrls(PROOF_BUCKET, paths);
+}
+
+/**
+ * ลิงก์ชั่วคราวของรูปโปรไฟล์
+ *
+ * บัคเก็ต avatars ตั้งเป็น public ไว้ ลิงก์ตรงๆ จึงเปิดได้อยู่แล้วและปกติ
+ * ไม่ต้องเซ็น แต่รูปสตอรี่ขอผ่านทางนี้ก่อน เพื่อให้ยังทำงานได้ถ้าวันหนึ่ง
+ * เปลี่ยนบัคเก็ตเป็นส่วนตัว โดยไม่ต้องกลับมาแก้โค้ดตรงนั้นอีก
+ */
+export async function signAvatarUrls(
+  paths: string[],
+): Promise<Map<string, string>> {
+  return signStorageUrls(AVATAR_BUCKET, paths);
+}
+
+async function signStorageUrls(
+  bucket: string,
+  paths: string[],
+): Promise<Map<string, string>> {
   const signed = new Map<string, string>();
   const unique = [...new Set(paths.filter(Boolean))];
   if (unique.length === 0) return signed;
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.storage
-    .from(PROOF_BUCKET)
+    .from(bucket)
     .createSignedUrls(unique, 60 * 60);
 
   for (const entry of data ?? []) {
