@@ -1,5 +1,6 @@
 import Avatar from "@/components/club/avatar";
 import ConfirmSubmit from "@/components/club/confirm-submit";
+import TypeToConfirm from "@/components/club/type-to-confirm";
 import { SubmitButton } from "@/components/club/form-controls";
 import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/club-limits";
 import {
@@ -8,7 +9,12 @@ import {
   type ProfileWithEmail,
 } from "@/lib/supabase/types";
 
-import { setAdminAction, setNicknameAction, setStatusAction } from "./actions";
+import {
+  resetTargetAction,
+  setAdminAction,
+  setNicknameAction,
+  setStatusAction,
+} from "./actions";
 
 function StatusBadge({ profile }: { profile: ProfileWithEmail }) {
   return (
@@ -150,6 +156,17 @@ export function MemberCard({
         >
           {profile.is_admin ? "ถอดสิทธิ์แอดมิน" : "ตั้งเป็นแอดมิน"}
         </SubmitButton>
+      </form>
+
+      <form action={resetTargetAction} className="border-t border-border pt-4">
+        <input type="hidden" name="id" value={profile.id} />
+        <TypeToConfirm
+          label="รีเซ็ตเป้าของคนนี้"
+          question={`ลบเป้าเดือนนี้ของ ${profile.nickname} พร้อมโหวตที่คนอื่นกดให้เขา แล้วให้ตั้งใหม่ได้ ใช้ตอนเขาพิมพ์เป้าผิด`}
+          phrase={profile.nickname}
+          confirmLabel="รีเซ็ตเป้า"
+          pendingLabel="กำลังรีเซ็ต…"
+        />
       </form>
 
       {isSelf ? null : (

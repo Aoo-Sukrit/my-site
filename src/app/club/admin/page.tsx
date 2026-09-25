@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import Alert from "@/components/club/alert";
 import { requireAdmin } from "@/lib/auth";
+import { getCurrentRound } from "@/lib/runs";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
 
 import { MemberCard, PendingCard, RemovedCard } from "./member-card";
+import RoundWindow from "./round-window";
 
 export const metadata: Metadata = {
   title: "แอดมิน",
@@ -27,6 +29,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
   // ใช้ RPC ไม่ใช่ select ตรงๆ เพราะคอลัมน์ email ถูกถอนสิทธิ์ select ไว้
   // (schema.sql ข้อ 7) ฟังก์ชันนี้เป็น security definer และเช็กเองว่า
   // คนเรียกเป็นแอดมินจริงถึงจะคืนข้อมูล
+  const round = await getCurrentRound();
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("admin_member_list");
 
@@ -54,6 +58,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
       {errorMessage ? <Alert tone="error">{errorMessage}</Alert> : null}
       {message ? <Alert tone="success">{message}</Alert> : null}
       {error ? <Alert tone="error">{toThaiDbError(error)}</Alert> : null}
+
+      {round ? <RoundWindow round={round} /> : null}
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-medium">

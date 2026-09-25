@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
+import { fromBangkokInputValue, thaiMonthLabel } from "@/lib/date";
+import { getCurrentRound } from "@/lib/runs";
 import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/club-limits";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -93,4 +95,91 @@ export async function setNicknameAction(formData: FormData) {
 
   revalidatePath("/club/admin");
   backTo("เปลี่ยนชื่อแล้ว", false);
+}
+
+
+// ---------------------------------------------------------------------------
+//  เกมตั้งเป้า (006_targets.sql)
+// ---------------------------------------------------------------------------
+
+/**
+ * แก้ช่วงเวลาตั้งเป้าของรอบเดือนปัจจุบัน
+ *
+ * update ตาราง rounds ตรงๆ ได้เลย ไม่ต้องมี RPC เพราะ policy
+ * rounds_update_admin จาก 003_runs.sql เปิดให้แอดมินแก้อยู่แล้ว
+ *
+ * ค่าที่รับมาจาก <input type="datetime-local"> ไม่มีโซนเวลาติดมา
+ * ต้องตีความเป็นเวลาไทยเสมอ ไม่ใช่เวลาของเครื่องที่แอดมินเปิดอยู่
+ */
+export async function setRoundWindowAction(formData: FormData) {
+  await requireAdmin();
+
+  const opensAt = fromBangkokInputValue(String(formData.get("opens_at") ?? ""));
+  const locksAt = fromBangkokInputValue(String(formData.get("locks_at") ?? ""));
+
+  if (!opensAt || !locksAt) {
+    backTo("รูปแบบวันเวลาไม่ถูกต้อง", true);
+  }
+  if (new Date(locksAt) <= new Date(opensAt)) {
+    backTo("เวลาปิดต้องอยู่หลังเวลาเปิด", true);
+  }
+
+  const round = await getCurrentRound();
+  if (!round) backTo("ไม่เจอรอบของเดือนนี้", true);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("rounds")
+    .update({ target_opens_at: opensAt, target_locks_at: locksAt })
+    .eq("id", round.id);
+
+  if (error) backTo(toThaiDbError(error), true);
+
+  revalidatePath("/club");
+  revalidatePath("/club/target");
+  revalidatePath("/club/admin");
+  backTo("อัปเดตช่วงเวลาตั้งเป้าแล้ว", false);
+}
+
+/** ลบเป้าและโหวตที่คนอื่นกดให้สมาชิกคนนี้ ในรอบเดือนปัจจุบัน */
+export async function resetTargetAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) backTo("ไม่รู้ว่าจะรีเซ็ตของใคร", true);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("admin_reset_target", { subject: id });
+
+  if (error) backTo(toThaiDbError(error), true);
+
+  revalidatePath("/club");
+  revalidatePath("/club/target");
+  revalidatePath("/club/admin");
+  backTo("รีเซ็ตเป้าของสมาชิกคนนี้แล้ว", false);
+}
+
+/** ล้างเป้าและโหวตทั้งรอบ ไว้เคลียร์ข้อมูลทดสอบ ไม่ยุ่งกับผลวิ่ง */
+export async function clearRoundTargetsAction(formData: FormData) {
+  await requireAdmin();
+
+  const round = await getCurrentRound();
+  if (!round) backTo("ไม่เจอรอบของเดือนนี้", true);
+
+  // ต้องพิมพ์ชื่อเดือนให้ตรงก่อน กันกดพลาดแล้วข้อมูลทั้งรอบหายไป
+  const typed = String(formData.get("confirm") ?? "").trim();
+  const expected = thaiMonthLabel(round.month);
+  if (typed !== expected) {
+    backTo(`ต้องพิมพ์ว่า "${expected}" ให้ตรงก่อนถึงจะล้างได้`, true);
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("admin_clear_round_targets");
+
+  if (error) backTo(toThaiDbError(error), true);
+
+  revalidatePath("/club");
+  revalidatePath("/club/target");
+  revalidatePath("/club/admin");
+  backTo("ล้างเป้าและโหวตทั้งรอบแล้ว ผลวิ่งไม่ถูกแตะ", false);
 }

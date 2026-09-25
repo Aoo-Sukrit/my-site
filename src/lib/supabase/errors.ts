@@ -30,20 +30,24 @@ export function toThaiAuthError(error: { message: string; code?: string }) {
   return error.message;
 }
 
+/** ข้อความมีตัวอักษรไทยอยู่แล้วไหม */
+function isThai(text: string) {
+  return /[฀-๿]/.test(text);
+}
+
 /** error จากฝั่งฐานข้อมูล (PostgREST) */
 export function toThaiDbError(error: { message: string; code?: string }) {
   const code = error.code ?? "";
+
+  // trigger กับฟังก์ชันของเราโยนข้อความไทยที่อธิบายเหตุผลมาเองอยู่แล้ว
+  // ถ้าทับด้วยข้อความกลางๆ ตามรหัส ผู้ใช้จะไม่รู้ว่าติดกติกาข้อไหน
+  if (isThai(error.message)) return error.message;
 
   if (code === "23505") {
     return "ชื่อนี้มีคนใช้แล้ว ลองตั้งใหม่";
   }
   if (code === "42501") {
-    // trigger ฝั่งฐานข้อมูลโยนข้อความไทยที่อธิบายเหตุผลมาเองอยู่แล้ว
-    // เช่น "เกิน 24 ชั่วโมงหลังกรอกแล้ว..." ถ้าทับด้วยข้อความกลางๆ
-    // ผู้ใช้จะไม่รู้ว่าติดกติกาข้อไหน
-    return /[฀-๿]/.test(error.message)
-      ? error.message
-      : "ไม่มีสิทธิ์แก้ข้อมูลส่วนนี้";
+    return "ไม่มีสิทธิ์แก้ข้อมูลส่วนนี้";
   }
   if (code === "PGRST205" || code === "42P01") {
     return "ยังไม่มีตาราง profiles ในฐานข้อมูล ต้องรัน supabase/schema.sql ก่อน";

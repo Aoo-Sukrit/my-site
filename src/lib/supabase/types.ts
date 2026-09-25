@@ -62,7 +62,60 @@ export type Round = {
   /** วันที่ 1 ของเดือนนั้น เช่น 2026-09-01 */
   month: string;
   status: RoundStatus;
+  /** เริ่มให้ตั้งเป้าและโหวต แอดมินแก้ได้ ไม่ได้ฝังไว้ในโค้ด */
+  target_opens_at: string;
+  /** ปิดรับเป้าและโหวต หลังเวลานี้ผลถึงเปิดให้ทุกคนเห็น */
+  target_locks_at: string;
   created_at: string;
+};
+
+// ---------------------------------------------------------------------------
+//  เกมตั้งเป้ารายเดือน (006_targets.sql)
+//  ทุกชนิดข้างล่างมาจากฟังก์ชัน security definer ไม่ได้ query ตารางตรง
+//  เพราะตาราง targets กับ target_votes ถูกปิดสิทธิ์ไว้ทั้งหมด
+// ---------------------------------------------------------------------------
+
+export type MyTargetState = {
+  has_target: boolean;
+  base_km: string | null;
+  vote_count: number;
+};
+
+export type VotableMember = {
+  member_id: string;
+  nickname: string;
+  caption: string | null;
+  avatar_url: string | null;
+};
+
+export type MyVote = VotableMember & {
+  subject_id: string;
+  delta: number;
+  created_at: string;
+};
+
+export type RoundTargetRow = {
+  member_id: string;
+  nickname: string;
+  caption: string | null;
+  avatar_url: string | null;
+  base_km: string;
+  total_delta: number;
+  final_km: string;
+  vote_count: number;
+};
+
+export type PercentRow = {
+  member_id: string;
+  nickname: string;
+  caption: string | null;
+  avatar_url: string | null;
+  is_admin: boolean;
+  base_km: string | null;
+  final_km: string | null;
+  total_km: string;
+  percent: string | null;
+  rank_no: number;
 };
 
 export type Run = {

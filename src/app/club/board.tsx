@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { PortraitAvatar } from "@/components/club/avatar";
-import { formatKm } from "@/lib/date";
-import type { LeaderboardRow } from "@/lib/supabase/types";
+import { formatKm, formatPercent } from "@/lib/date";
+import type { LeaderboardRow, PercentRow } from "@/lib/supabase/types";
 
 /** อันดับ 1 กลางและใหญ่กว่า ตามลำดับการวางแบบโพเดียมจริง 2 - 1 - 3 */
 const PODIUM_ORDER = [1, 0, 2] as const;
@@ -186,5 +186,139 @@ export function LogRunButton() {
       </span>
       กรอกผลวิ่ง
     </Link>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+//  กระดาน % ของเป้า
+//  ใช้โครงการ์ดและคลาสเดียวกับกระดานระยะรวมทุกอย่าง ต่างแค่ตัวเลขที่แสดง
+//  จะได้สลับไปมาแล้วไม่รู้สึกว่าเป็นคนละเว็บ
+// ---------------------------------------------------------------------------
+
+/** "ตั้งไว้ 50.00 เพื่อนปรับเป็น 53.00" โชว์เฉพาะตอนที่โหวตทำให้เป้าเปลี่ยน */
+function adjustNote(row: PercentRow): string | null {
+  if (!row.base_km || !row.final_km) return null;
+  if (Number(row.base_km) === Number(row.final_km)) return null;
+  return `ตั้งไว้ ${formatKm(row.base_km)} เพื่อนปรับเป็น ${formatKm(row.final_km)}`;
+}
+
+function PercentSlot({ row, first }: { row: PercentRow; first: boolean }) {
+  const note = adjustNote(row);
+
+  return (
+    <Link
+      href={`/club/member/${row.member_id}`}
+      className="block text-center transition-opacity hover:opacity-90"
+    >
+      <div className="relative">
+        <PortraitAvatar
+          src={row.avatar_url}
+          nickname={row.nickname}
+          className={first ? "ring-2 ring-club-line" : ""}
+        />
+        <RankBadge rank={row.rank_no} highlight={first} />
+      </div>
+
+      <p
+        className={`mt-5 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
+      >
+        {row.nickname}
+      </p>
+      <p
+        className={`truncate font-display font-semibold text-accent-strong ${
+          first ? "text-base sm:text-lg" : "text-sm"
+        }`}
+      >
+        {formatPercent(row.percent)}
+      </p>
+      <p className="truncate text-[11px] text-muted">
+        {formatKm(row.total_km)} / {row.final_km ? formatKm(row.final_km) : "—"}{" "}
+        กม.
+      </p>
+      {note ? (
+        <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted">
+          {note}
+        </p>
+      ) : null}
+      {row.caption ? (
+        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">
+          {row.caption}
+        </p>
+      ) : null}
+    </Link>
+  );
+}
+
+export function PercentPodium({ top }: { top: PercentRow[] }) {
+  return (
+    <ul className="grid grid-cols-[1fr_1.3fr_1fr] items-end gap-2 sm:gap-4">
+      {PODIUM_ORDER.map((index) => {
+        const row = top[index];
+        if (!row) return <li key={index} aria-hidden />;
+        return (
+          <li key={row.member_id}>
+            <PercentSlot row={row} first={index === 0} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function PercentList({ rows }: { rows: PercentRow[] }) {
+  if (rows.length === 0) return null;
+
+  return (
+    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      {rows.map((row) => {
+        const note = adjustNote(row);
+        // ยังไม่ได้ตั้งเป้า percent เป็น null จางลงเหมือนคนที่ยังไม่วิ่ง
+        const idle = row.percent === null;
+
+        return (
+          <li key={row.member_id}>
+            <Link
+              href={`/club/member/${row.member_id}`}
+              className={`flex min-h-16 items-center gap-3 px-3 py-2 transition-colors hover:bg-accent-soft ${
+                idle ? "opacity-55" : ""
+              }`}
+            >
+              <span className="w-6 shrink-0 text-center text-sm text-muted">
+                {idle ? "—" : row.rank_no}
+              </span>
+
+              <span className="w-10 shrink-0">
+                <PortraitAvatar src={row.avatar_url} nickname={row.nickname} />
+              </span>
+
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {row.nickname}
+                </span>
+                {row.caption ? (
+                  <span className="block truncate text-xs text-muted">
+                    {row.caption}
+                  </span>
+                ) : null}
+                <span className="block truncate text-xs text-muted">
+                  {idle ? "ยังไม่ได้ตั้งเป้า" : note}
+                </span>
+              </span>
+
+              <span className="shrink-0 text-right">
+                <span className="block font-display text-sm font-semibold">
+                  {formatPercent(row.percent)}
+                </span>
+                <span className="block text-xs text-muted">
+                  {formatKm(row.total_km)} /{" "}
+                  {row.final_km ? formatKm(row.final_km) : "—"} กม.
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
