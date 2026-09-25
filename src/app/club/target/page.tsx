@@ -117,7 +117,10 @@ async function OpenPhase() {
       <section className="space-y-4">
         <div className="space-y-1">
           <h2 className="font-display text-lg font-medium">
-            ปรับเป้าเพื่อน <span className="text-muted">({votable.length})</span>
+            ปรับเป้าเพื่อน{" "}
+            {mine?.has_target ? (
+              <span className="text-muted">({votable.length})</span>
+            ) : null}
           </h2>
           <p className="text-sm text-muted">
             คนละหนึ่งครั้งต่อหนึ่งคน ไม่โหวตก็ได้ ถือว่าเป้านั้นเหมาะสมแล้ว
@@ -125,7 +128,19 @@ async function OpenPhase() {
           </p>
         </div>
 
-        {votable.length === 0 ? (
+        {/* ยังไม่ลงเดิมพันของตัวเอง ก็ยังไม่มีสิทธิ์ขยับของคนอื่น
+            ฐานข้อมูลกันไว้แล้วทั้งใน vote_on_target() และ votable_members()
+            ตรงนี้แค่บอกให้รู้ว่าทำไมยังไม่เห็นใคร แทนที่จะโชว์รายชื่อว่างๆ */}
+        {!mine?.has_target ? (
+          <div className="rounded-2xl border border-dashed border-club-line bg-accent-soft px-5 py-8 text-center">
+            <p className="font-display text-base font-medium">
+              ตั้งเป้าของตัวเองก่อน
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              ล็อกเป้าด้านบนแล้วจะปลดล็อกการปรับเป้าเพื่อน
+            </p>
+          </div>
+        ) : votable.length === 0 ? (
           <p className="text-sm text-muted">
             ตอนนี้ยังไม่มีใครให้โหวต รอเพื่อนตั้งเป้าก่อน
           </p>
