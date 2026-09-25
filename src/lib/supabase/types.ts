@@ -86,10 +86,20 @@ export type VotableMember = {
   nickname: string;
   caption: string | null;
   avatar_url: string | null;
+  /** เป้าที่เขาตั้งไว้ เปิดให้เห็นได้ ต่างจากผลรวมโหวตที่ยังปิดตาอยู่ */
+  base_km: string;
+  /** ระยะจริงของเขาในรอบเดือนก่อน null เมื่อไม่มีข้อมูล */
+  last_month_km: string | null;
 };
 
-export type MyVote = VotableMember & {
+export type MyVote = {
   subject_id: string;
+  nickname: string;
+  caption: string | null;
+  avatar_url: string | null;
+  /** null ได้ ถ้าแอดมินรีเซ็ตเป้าของเขาไประหว่างรอบ */
+  base_km: string | null;
+  /** ค่าที่เรากดเอง ไม่ใช่ผลรวมของทุกคน */
   delta: number;
   created_at: string;
 };

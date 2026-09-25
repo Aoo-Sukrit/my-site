@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import Alert from "@/components/club/alert";
 import Avatar from "@/components/club/avatar";
 import { SubmitButton } from "@/components/club/form-controls";
+import { formatKm } from "@/lib/date";
 import { VOTE_OPTIONS } from "@/lib/target-rules";
 import type { VotableMember } from "@/lib/supabase/types";
 
@@ -36,6 +37,24 @@ export default function VoteCard({ member }: { member: VotableMember }) {
             <p className="truncate text-xs text-muted">{member.caption}</p>
           ) : null}
         </div>
+      </div>
+
+      {/* เห็นเป้าเขาได้ เพราะกด ±5 โดยไม่เห็นตัวเลขคือการสุ่ม ไม่ใช่การตัดสินใจ
+          สิ่งที่ยังปิดตาอยู่คือผลรวมโหวต ไม่ใช่ตัวเป้า
+          ใช้สไตล์ตัวเลขชุดเดียวกับการ์ดบนกระดาน ไม่ได้ทำระบบสีใหม่ */}
+      <div className="space-y-0.5 rounded-xl bg-background px-3 py-2">
+        <p className="text-sm">
+          <span className="text-muted">เป้าเดือนนี้ </span>
+          <span className="font-display font-semibold text-accent-strong">
+            {formatKm(member.base_km)}
+          </span>
+          <span className="text-xs text-muted"> กม.</span>
+        </p>
+        <p className="text-xs text-muted">
+          {member.last_month_km
+            ? `เดือนที่แล้ววิ่งจริง ${formatKm(member.last_month_km)} กม.`
+            : "ไม่มีข้อมูลเดือนก่อน"}
+        </p>
       </div>
 
       {pick === null ? (

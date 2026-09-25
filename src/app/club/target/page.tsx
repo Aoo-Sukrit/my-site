@@ -169,10 +169,16 @@ async function OpenPhase() {
                   nickname={vote.nickname}
                   size={36}
                 />
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {vote.nickname}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">
+                    {vote.nickname}
+                  </span>
+                  <span className="block truncate text-xs text-muted">
+                    เป้าเดือนนี้{" "}
+                    {vote.base_km ? `${formatKm(vote.base_km)} กม.` : "—"}
+                  </span>
                 </span>
-                <span className="font-display text-sm font-semibold tabular-nums text-accent-strong">
+                <span className="shrink-0 font-display text-sm font-semibold tabular-nums text-accent-strong">
                   {signedDelta(vote.delta)} กม.
                 </span>
               </li>
