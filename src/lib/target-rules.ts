@@ -95,3 +95,14 @@ export const PHASE_LABEL: Record<RoundPhase, string> = {
 export function finalKm(baseKm: number, totalDelta: number): number {
   return Math.max(baseKm + totalDelta, FINAL_MIN_KM);
 }
+
+/**
+ * แสดงค่าปรับแบบมีเครื่องหมาย 3 -> "+3", -2 -> "-2"
+ *
+ * ต้องอยู่ในไฟล์นี้ ไม่ใช่ใน vote-card.tsx เพราะไฟล์นั้นเป็น "use client"
+ * และหน้า page.tsx ซึ่งเป็น Server Component ก็เรียกใช้ด้วย
+ * Next.js ห้ามเซิร์ฟเวอร์เรียกฟังก์ชันที่อยู่ในไฟล์ client หน้าจะพังทั้งหน้า
+ */
+export function signedDelta(delta: number): string {
+  return delta > 0 ? `+${delta}` : String(delta);
+}

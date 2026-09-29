@@ -6,7 +6,7 @@ import Avatar from "@/components/club/avatar";
 import { requireApproved } from "@/lib/auth";
 import { formatKm, thaiDateTimeLong, thaiMonthLabel } from "@/lib/date";
 import { getCurrentRound } from "@/lib/runs";
-import { PHASE_LABEL, roundPhase } from "@/lib/target-rules";
+import { PHASE_LABEL, roundPhase, signedDelta } from "@/lib/target-rules";
 import {
   getMyTargetState,
   getMyVotes,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/targets";
 
 import TargetForm from "./target-form";
-import VoteCard, { signedDelta } from "./vote-card";
+import VoteCard from "./vote-card";
 
 export const metadata: Metadata = {
   title: "เป้าเดือนนี้",

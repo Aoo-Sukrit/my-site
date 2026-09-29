@@ -6,16 +6,12 @@ import Alert from "@/components/club/alert";
 import Avatar from "@/components/club/avatar";
 import { SubmitButton } from "@/components/club/form-controls";
 import { formatKm } from "@/lib/date";
-import { VOTE_OPTIONS } from "@/lib/target-rules";
+import { signedDelta, VOTE_OPTIONS } from "@/lib/target-rules";
 import type { VotableMember } from "@/lib/supabase/types";
 
 import { voteAction, type TargetActionResult } from "./actions";
 
 const INITIAL: TargetActionResult = { error: null, ok: false };
-
-export function signedDelta(delta: number) {
-  return delta > 0 ? `+${delta}` : String(delta);
-}
 
 /**
  * การ์ดโหวตหนึ่งคน
