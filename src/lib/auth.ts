@@ -44,7 +44,7 @@ export async function getViewer(): Promise<Viewer | null> {
     .eq("id", user.id)
     .maybeSingle<Profile>();
 
-  // ล็อกอินได้แต่ยังไม่มีแถวใน profiles แปลว่า trigger ใน schema.sql
+  // ล็อกอินได้แต่ยังไม่มีแถวใน profiles แปลว่า trigger ใน supabase/migrations/20260924000001_schema.sql
   // ยังไม่ได้รัน หรือรันไม่ผ่าน
   if (!profile) return null;
 

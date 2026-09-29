@@ -22,7 +22,7 @@ export type Profile = {
 /**
  * คอลัมน์ที่ผู้ใช้ทั่วไปอ่านได้
  *
- * ต้องระบุชื่อคอลัมน์เองแทนการใช้ * เพราะ schema.sql ข้อ 7 ถอนสิทธิ์ select
+ * ต้องระบุชื่อคอลัมน์เองแทนการใช้ * เพราะ supabase/migrations/20260924000001_schema.sql ข้อ 7 ถอนสิทธิ์ select
  * คอลัมน์ email ออกจาก role authenticated ไปแล้ว ถ้ายิง select * Postgres
  * จะตอบ permission denied for column email
  */
@@ -52,7 +52,7 @@ export function isProfileStatus(value: unknown): value is ProfileStatus {
 }
 
 // ---------------------------------------------------------------------------
-//  ผลวิ่ง (003_runs.sql)
+//  ผลวิ่ง (supabase/migrations/20260925000003_runs.sql)
 // ---------------------------------------------------------------------------
 
 export type RoundStatus = "open" | "closed";
@@ -70,7 +70,7 @@ export type Round = {
 };
 
 // ---------------------------------------------------------------------------
-//  เกมตั้งเป้ารายเดือน (006_targets.sql)
+//  เกมตั้งเป้ารายเดือน (supabase/migrations/20260925000006_targets.sql)
 //  ทุกชนิดข้างล่างมาจากฟังก์ชัน security definer ไม่ได้ query ตารางตรง
 //  เพราะตาราง targets กับ target_votes ถูกปิดสิทธิ์ไว้ทั้งหมด
 // ---------------------------------------------------------------------------

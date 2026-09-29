@@ -64,7 +64,7 @@ export async function signupAction(
     password,
     options: {
       // ชื่อเดินทางไปกับ raw_user_meta_data แล้ว trigger handle_new_user
-      // ใน schema.sql จะหยิบไปใส่ตาราง profiles ให้
+      // ใน supabase/migrations/20260924000001_schema.sql จะหยิบไปใส่ตาราง profiles ให้
       data: { nickname },
       emailRedirectTo: `${origin}/club/auth/callback`,
     },

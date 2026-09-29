@@ -13,7 +13,7 @@ export const BACKDATE_GRACE_DAYS = 3;
 
 /**
  * ขั้นต่ำและขั้นสูงของระยะต่อหนึ่งรายการ
- * ต้องตรงกับ constraint runs_distance_range ใน supabase/005_distance_range.sql
+ * ต้องตรงกับ constraint runs_distance_range ใน supabase/migrations/20260925000005_distance_range.sql
  *
  * ขั้นต่ำกันคนกรอกเล่นๆ ทีละ 0.01 จนตารางรก
  * ขั้นสูงกันพิมพ์ผิด เช่นตั้งใจพิมพ์ 7.00 แต่พิมพ์ 700 ซึ่งจะทำให้กระดาน

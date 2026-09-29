@@ -28,7 +28,7 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
   const errorMessage = firstParam(params.err);
 
   // ใช้ RPC ไม่ใช่ select ตรงๆ เพราะคอลัมน์ email ถูกถอนสิทธิ์ select ไว้
-  // (schema.sql ข้อ 7) ฟังก์ชันนี้เป็น security definer และเช็กเองว่า
+  // (supabase/migrations/20260924000001_schema.sql ข้อ 7) ฟังก์ชันนี้เป็น security definer และเช็กเองว่า
   // คนเรียกเป็นแอดมินจริงถึงจะคืนข้อมูล
   const round = await getCurrentRound();
   // เปิดผลไปแล้วห้ามรีเซ็ตเป้าทีละคน ฐานข้อมูลก็กันไว้อีกชั้นใน 009

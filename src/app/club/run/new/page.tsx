@@ -31,7 +31,7 @@ export default async function NewRunPage() {
       {!round ? (
         <Alert tone="error">
           ยังไม่มีรอบของเดือนนี้ ลองรีเฟรชอีกครั้ง ถ้ายังไม่หายแปลว่ายังไม่ได้รัน
-          supabase/003_runs.sql
+          supabase/migrations/20260925000003_runs.sql
         </Alert>
       ) : round.status !== "open" ? (
         <Alert tone="info">

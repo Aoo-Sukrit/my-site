@@ -32,7 +32,7 @@ export default async function TargetPage() {
           เป้าเดือนนี้
         </h1>
         <Alert tone="error">
-          ยังไม่มีรอบของเดือนนี้ ถ้าเพิ่งรัน supabase/006_targets.sql
+          ยังไม่มีรอบของเดือนนี้ ถ้าเพิ่งรัน supabase/migrations/20260925000006_targets.sql
           ลองรีเฟรชอีกครั้ง
         </Alert>
       </div>

@@ -22,7 +22,7 @@ export function toThaiAuthError(error: { message: string; code?: string }) {
     return "ส่งอีเมลถี่เกินไป รอสักครู่แล้วลองใหม่";
   }
   if (message.includes("database error saving new user")) {
-    return "สมัครไม่สำเร็จ มักเกิดจากชื่อซ้ำ ลองเปลี่ยนชื่อแล้วลองใหม่ (ถ้ายังไม่ได้ แปลว่า supabase/schema.sql ยังไม่ถูกรัน)";
+    return "สมัครไม่สำเร็จ มักเกิดจากชื่อซ้ำ ลองเปลี่ยนชื่อแล้วลองใหม่ (ถ้ายังไม่ได้ แปลว่า supabase/migrations/20260924000001_schema.sql ยังไม่ถูกรัน)";
   }
   if (message.includes("fetch failed")) {
     return "ต่อกับ Supabase ไม่ได้ ลองเช็กค่าใน .env.local";
@@ -50,7 +50,7 @@ export function toThaiDbError(error: { message: string; code?: string }) {
     return "ไม่มีสิทธิ์แก้ข้อมูลส่วนนี้";
   }
   if (code === "PGRST205" || code === "42P01") {
-    return "ยังไม่มีตาราง profiles ในฐานข้อมูล ต้องรัน supabase/schema.sql ก่อน";
+    return "ยังไม่มีตาราง profiles ในฐานข้อมูล ต้องรัน supabase/migrations/20260924000001_schema.sql ก่อน";
   }
   return error.message;
 }
