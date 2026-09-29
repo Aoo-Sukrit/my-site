@@ -88,9 +88,12 @@ export function PendingCard({ profile }: { profile: ProfileWithEmail }) {
 export function MemberCard({
   profile,
   isSelf,
+  canResetTarget,
 }: {
   profile: ProfileWithEmail;
   isSelf: boolean;
+  /** เปิดผลเป้าไปแล้วห้ามรีเซ็ตทีละคน ไม่งั้นผลที่ประกาศไปจะเปลี่ยนย้อนหลัง */
+  canResetTarget: boolean;
 }) {
   return (
     <li className="space-y-4 rounded-2xl border border-border bg-surface p-4">
@@ -158,16 +161,18 @@ export function MemberCard({
         </SubmitButton>
       </form>
 
-      <form action={resetTargetAction} className="border-t border-border pt-4">
-        <input type="hidden" name="id" value={profile.id} />
-        <TypeToConfirm
-          label="รีเซ็ตเป้าของคนนี้"
-          question={`ลบเป้าเดือนนี้ของ ${profile.nickname} พร้อมโหวตที่คนอื่นกดให้เขา แล้วให้ตั้งใหม่ได้ ใช้ตอนเขาพิมพ์เป้าผิด`}
-          phrase={profile.nickname}
-          confirmLabel="รีเซ็ตเป้า"
-          pendingLabel="กำลังรีเซ็ต…"
-        />
-      </form>
+      {canResetTarget ? (
+        <form action={resetTargetAction} className="border-t border-border pt-4">
+          <input type="hidden" name="id" value={profile.id} />
+          <TypeToConfirm
+            label="รีเซ็ตเป้าของคนนี้"
+            question={`ลบเป้าเดือนนี้ของ ${profile.nickname} พร้อมโหวตที่คนอื่นกดให้เขา แล้วให้ตั้งใหม่ได้ ใช้ตอนเขาพิมพ์เป้าผิด`}
+            phrase={profile.nickname}
+            confirmLabel="รีเซ็ตเป้า"
+            pendingLabel="กำลังรีเซ็ต…"
+          />
+        </form>
+      ) : null}
 
       {isSelf ? null : (
         <form action={setStatusAction} className="border-t border-border pt-4">

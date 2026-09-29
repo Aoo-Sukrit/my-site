@@ -12,6 +12,7 @@ import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
 import { logoutAction } from "./actions";
+import RewardsTab from "./rewards";
 import {
   LogRunButton,
   PercentList,
@@ -35,7 +36,11 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const viewer = await requireApproved();
   const params = await props.searchParams;
 
-  const showPercent = params.board === "percent";
+  const boardTab =
+    params.board === "percent" || params.board === "rewards"
+      ? params.board
+      : "distance";
+  const showPercent = boardTab === "percent";
 
   const round = await getCurrentRound();
   const board = await getLeaderboard();
@@ -90,17 +95,45 @@ export default async function ClubPage(props: PageProps<"/club">) {
         </Link>
       ) : null}
 
+      {/* พอเปิดผลแล้วแถบตั้งเป้าหายไป ทำให้ไม่มีทางไปดูผลจากหน้านี้เลย
+          แถบนี้มาแทน อยู่จนหมดเดือน เพราะ round คือรอบของเดือนปัจจุบัน */}
+      {round && phase === "revealed" ? (
+        <Link
+          href="/club?board=rewards"
+          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
+        >
+          <span>
+            <span className="block font-display text-base font-semibold">
+              เปิดผลเป้าแล้ว
+            </span>
+            <span className="block text-sm">ดูว่าใครปรับเป้าใคร</span>
+          </span>
+          <span aria-hidden className="text-xl">
+            →
+          </span>
+        </Link>
+      ) : null}
+
       {/* สลับกระดานด้วย query string ไม่ต้องใช้ JS ฝั่งเบราว์เซอร์เลย */}
-      <nav className="flex gap-2 rounded-full border border-border p-1">
-        <BoardTab href="/club" active={!showPercent}>
+      <nav className="flex gap-1 rounded-full border border-border p-1">
+        <BoardTab href="/club" active={boardTab === "distance"}>
           ระยะรวม
         </BoardTab>
-        <BoardTab href="/club?board=percent" active={showPercent}>
+        <BoardTab href="/club?board=percent" active={boardTab === "percent"}>
           % ของเป้า
+        </BoardTab>
+        <BoardTab href="/club?board=rewards" active={boardTab === "rewards"}>
+          รางวัล
         </BoardTab>
       </nav>
 
-      {showPercent ? (
+      {boardTab === "rewards" ? (
+        round ? (
+          <RewardsTab round={round} />
+        ) : (
+          <p className="text-sm text-muted">ยังไม่มีรอบของเดือนนี้</p>
+        )
+      ) : showPercent ? (
         phase !== "revealed" && round ? (
           <section className="rounded-2xl border border-dashed border-club-line bg-accent-soft px-5 py-10 text-center">
             <p className="font-display text-lg font-medium">เป้ายังไม่เปิด</p>

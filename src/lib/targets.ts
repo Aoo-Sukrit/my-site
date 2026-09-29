@@ -5,6 +5,7 @@ import type {
   PercentRow,
   RoundTargetRow,
   VotableMember,
+  VoteBreakdownRow,
 } from "./supabase/types";
 
 /**
@@ -49,4 +50,11 @@ export async function getPercentBoard(): Promise<PercentRow[]> {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("month_percent_board");
   return (data ?? []) as PercentRow[];
+}
+
+/** ก่อนถึงเวลาเปิดผล ฝั่งฐานข้อมูลคืน 0 แถวเสมอ เหมือน round_targets() */
+export async function getVoteBreakdown(): Promise<VoteBreakdownRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("round_vote_breakdown");
+  return (data ?? []) as VoteBreakdownRow[];
 }

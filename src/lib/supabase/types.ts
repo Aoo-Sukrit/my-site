@@ -115,6 +115,17 @@ export type RoundTargetRow = {
   vote_count: number;
 };
 
+/** หนึ่งแถวคือหนึ่งโหวต มาจาก round_vote_breakdown() ซึ่งเปิดหลังเวลาเปิดผล */
+export type VoteBreakdownRow = {
+  subject_id: string;
+  subject_nickname: string;
+  subject_avatar_url: string | null;
+  voter_id: string;
+  voter_nickname: string;
+  voter_avatar_url: string | null;
+  delta: number;
+};
+
 export type PercentRow = {
   member_id: string;
   nickname: string;

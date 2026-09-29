@@ -139,8 +139,9 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
                 proofUrl={signed.get(run.proof_url) ?? null}
                 dateLabel={thaiShortDate(run.ran_on)}
                 canManage={canManage && (viewer.profile.is_admin || withinEditWindow(run))}
+                withinWindow={withinEditWindow(run)}
                 hoursLeft={hoursLeftToEdit(run)}
-                isAdminEdit={!isSelf && viewer.profile.is_admin}
+                viewerIsAdmin={viewer.profile.is_admin}
               />
             ))}
           </ul>

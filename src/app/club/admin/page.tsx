@@ -4,6 +4,7 @@ import Link from "next/link";
 import Alert from "@/components/club/alert";
 import { requireAdmin } from "@/lib/auth";
 import { getCurrentRound } from "@/lib/runs";
+import { roundPhase } from "@/lib/target-rules";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
@@ -30,6 +31,10 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
   // (schema.sql ข้อ 7) ฟังก์ชันนี้เป็น security definer และเช็กเองว่า
   // คนเรียกเป็นแอดมินจริงถึงจะคืนข้อมูล
   const round = await getCurrentRound();
+  // เปิดผลไปแล้วห้ามรีเซ็ตเป้าทีละคน ฐานข้อมูลก็กันไว้อีกชั้นใน 009
+  const canResetTarget = round
+    ? roundPhase(round.target_opens_at, round.target_locks_at) !== "revealed"
+    : false;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("admin_member_list");
@@ -91,6 +96,7 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
                 key={profile.id}
                 profile={profile}
                 isSelf={profile.id === viewer.userId}
+                canResetTarget={canResetTarget}
               />
             ))}
           </ul>

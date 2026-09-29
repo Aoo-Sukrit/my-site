@@ -1,4 +1,4 @@
-import { formatKm } from "@/lib/date";
+import { formatKm, formatPercent } from "@/lib/date";
 
 /**
  * หน้าตาของรูปสตอรี่ 1080 x 1920
@@ -20,7 +20,7 @@ export const STORY_WIDTH = 1080;
 export const STORY_HEIGHT = 1920;
 
 /** จำนวนแถวที่ยัดลงในหน้าได้พอดี เกินกว่านี้สรุปเป็นบรรทัดเดียว */
-const MAX_ROWS = 8;
+const MAX_ROWS = 7;
 
 /**
  * ความสูงของกล่องรูปในโพเดียม เท่ากันทั้งสามช่องโดยตั้งใจ
@@ -30,7 +30,7 @@ const MAX_ROWS = 8;
  * ตรึงความสูงกล่องรูปไว้เท่ากัน แล้ววางรูปชิดล่างในกล่อง
  * ชื่อกับระยะของทั้งสามช่องจึงเริ่มที่ระดับเดียวกันเสมอ
  */
-const PODIUM_PHOTO_BOX = 400;
+const PODIUM_PHOTO_BOX = 360;
 
 /**
  * ตัดข้อความให้สั้นพอที่จะไม่ล้นกรอบ
@@ -57,7 +57,27 @@ export type StoryEntry = {
   runCount: number;
   rankNo: number;
   idle: boolean;
+  /** โหมด % เท่านั้น null = ยังไม่ได้ตั้งเป้า */
+  percent: string | null;
+  /** โหมด % เท่านั้น เป้าจริงหลังรวมโหวต */
+  finalKm: string | null;
 };
+
+/** สองกระดานใช้ดีไซน์เดียวกันทุกอย่าง ต่างแค่ตัวเลขที่เอามาแสดง */
+export type StoryMode = "distance" | "percent";
+
+/** ตัวเลขใหญ่ของแต่ละคน */
+function bigNumber(entry: StoryEntry, mode: StoryMode): string {
+  if (mode === "distance") return `${formatKm(entry.totalKm)} กม.`;
+  return entry.percent === null ? "—" : formatPercent(entry.percent);
+}
+
+/** บรรทัดเล็กใต้ตัวเลขใหญ่ โหมดระยะรวมไม่มี */
+function smallLine(entry: StoryEntry, mode: StoryMode): string | null {
+  if (mode === "distance") return null;
+  if (entry.percent === null) return "ยังไม่ได้ตั้งเป้า";
+  return `${formatKm(entry.totalKm)} / ${formatKm(entry.finalKm ?? 0)} กม.`;
+}
 
 function Photo({
   avatar,
@@ -114,10 +134,19 @@ function Photo({
   );
 }
 
-function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
-  const width = first ? 300 : 236;
-  const height = first ? 400 : 314;
+function PodiumSlot({
+  entry,
+  first,
+  mode,
+}: {
+  entry: StoryEntry;
+  first: boolean;
+  mode: StoryMode;
+}) {
+  const width = first ? 270 : 210;
+  const height = first ? 360 : 280;
   const caption = truncate(entry.caption, first ? 28 : 22);
+  const small = smallLine(entry, mode);
 
   return (
     <div
@@ -168,14 +197,22 @@ function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
         </div>
       </div>
 
+      {/* กันที่ให้ชื่อสองบรรทัดเสมอ ชื่อยาวอย่าง "angkuji run slow" จะได้ไม่
+          ดันบรรทัดระยะของช่องนั้นให้ต่ำกว่าอีกสองช่อง แถวตัวเลขจึงตรงแนวกัน */}
       <div
         style={{
           display: "flex",
-          marginTop: 42,
+          alignItems: "flex-start",
+          justifyContent: "center",
+          marginTop: 38,
+          height: Math.round((first ? 34 : 28) * 1.22 * 2),
+          width,
+          overflow: "hidden",
+          textAlign: "center",
           color: INK,
           fontSize: first ? 34 : 28,
+          lineHeight: 1.22,
           fontWeight: 600,
-          maxWidth: width,
         }}
       >
         {entry.nickname}
@@ -189,8 +226,21 @@ function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
           fontSize: first ? 38 : 32,
         }}
       >
-        {formatKm(entry.totalKm)} กม.
+        {bigNumber(entry, mode)}
       </div>
+
+      {small ? (
+        <div
+          style={{
+            display: "flex",
+            marginTop: 2,
+            color: MUTED,
+            fontSize: 22,
+          }}
+        >
+          {small}
+        </div>
+      ) : null}
 
       {caption ? (
         <div
@@ -212,15 +262,18 @@ function PodiumSlot({ entry, first }: { entry: StoryEntry; first: boolean }) {
   );
 }
 
-function ListRow({ entry }: { entry: StoryEntry }) {
+function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
   // แคปชั่นมาก่อน ถ้าไม่มีค่อยบอกจำนวนครั้ง ไม่มีทั้งคู่ก็ไม่ต้องมีบรรทัดรอง
   const secondary =
     truncate(entry.caption, 44) ??
     (entry.idle
-      ? "ยังไม่ได้กรอก"
+      ? mode === "percent"
+        ? "ยังไม่ได้ตั้งเป้า"
+        : "ยังไม่ได้กรอก"
       : entry.runCount > 0
         ? `${entry.runCount} ครั้ง`
         : null);
+  const small = smallLine(entry, mode);
 
   return (
     <div
@@ -278,13 +331,26 @@ function ListRow({ entry }: { entry: StoryEntry }) {
       <div
         style={{
           display: "flex",
-          color: INK,
-          fontFamily: "PlexThai",
-          fontWeight: 600,
-          fontSize: 30,
+          flexDirection: "column",
+          alignItems: "flex-end",
         }}
       >
-        {formatKm(entry.totalKm)} กม.
+        <div
+          style={{
+            display: "flex",
+            color: INK,
+            fontFamily: "PlexThai",
+            fontWeight: 600,
+            fontSize: 30,
+          }}
+        >
+          {bigNumber(entry, mode)}
+        </div>
+        {small ? (
+          <div style={{ display: "flex", color: MUTED, fontSize: 20 }}>
+            {small}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -297,6 +363,8 @@ export function StoryCard({
   podium,
   rows,
   totalKm,
+  mode = "distance",
+  totalLabel = "รวมทั้งกลุ่ม",
 }: {
   logo: string;
   periodLabel: string;
@@ -304,6 +372,8 @@ export function StoryCard({
   podium: StoryEntry[];
   rows: StoryEntry[];
   totalKm: number;
+  mode?: StoryMode;
+  totalLabel?: string;
 }) {
   const shown = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS - 1) : rows;
   const hidden = rows.length - shown.length;
@@ -338,23 +408,38 @@ export function StoryCard({
         src={logo}
         width={168}
         height={168}
-        style={{ width: 168, height: 168, borderRadius: 28 }}
+        style={{ width: 168, height: 168, borderRadius: 28, flexShrink: 0 }}
       />
 
+      {/* flexShrink: 0 กับ lineHeight ที่ระบุชัด สำคัญมาก
+          กล่องนอกสูงตายตัว 1920 ถ้าเนื้อหารวมสูงเกิน yoga จะบีบทุกกล่องที่
+          ยอมให้บีบได้ กล่องข้อความจะเตี้ยลงจนตัวอักษรล้นออกมาทับกล่องถัดไป
+          ซึ่งเคยทำให้บรรทัดเดือนไปทับหัว BEER NOW RUN LATER มาแล้ว */}
       <div
         style={{
           display: "flex",
+          flexShrink: 0,
           marginTop: 22,
           fontFamily: "PlexThai",
           fontWeight: 600,
           fontSize: 58,
+          lineHeight: 1.25,
           letterSpacing: -1,
         }}
       >
         BEER NOW RUN LATER
       </div>
 
-      <div style={{ display: "flex", marginTop: 8, color: MUTED, fontSize: 30 }}>
+      <div
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          marginTop: 10,
+          color: MUTED,
+          fontSize: 30,
+          lineHeight: 1.4,
+        }}
+      >
         {periodLabel} · {memberCount} คน
       </div>
 
@@ -376,12 +461,13 @@ export function StoryCard({
             fontSize: 44,
           }}
         >
-          ยังไม่มีใครกรอกผลเลย
+          {mode === "percent" ? "ยังไม่มีใครตั้งเป้าเลย" : "ยังไม่มีใครกรอกผลเลย"}
         </div>
       ) : (
         <div
           style={{
             display: "flex",
+            flexShrink: 0,
             flexDirection: "row",
             alignItems: "flex-start",
             justifyContent: "center",
@@ -394,6 +480,7 @@ export function StoryCard({
               key={slot.entry.memberId}
               entry={slot.entry}
               first={slot.first}
+              mode={mode}
             />
           ))}
         </div>
@@ -406,10 +493,12 @@ export function StoryCard({
           width: "100%",
           marginTop: 36,
           flexGrow: 1,
+          // รายการเป็นกล่องเดียวที่ยอมให้ยืดหดได้ ที่เหลือตรึงไว้หมด
+          overflow: "hidden",
         }}
       >
         {shown.map((entry) => (
-          <ListRow key={entry.memberId} entry={entry} />
+          <ListRow key={entry.memberId} entry={entry} mode={mode} />
         ))}
 
         {hidden > 0 ? (
@@ -432,6 +521,7 @@ export function StoryCard({
         style={{
           display: "flex",
           width: "100%",
+          flexShrink: 0,
           alignItems: "center",
           justifyContent: "space-between",
           marginTop: 20,
@@ -443,7 +533,7 @@ export function StoryCard({
           color: CREAM,
         }}
       >
-        <div style={{ display: "flex", fontSize: 32 }}>รวมทั้งกลุ่ม</div>
+        <div style={{ display: "flex", fontSize: 32 }}>{totalLabel}</div>
         <div
           style={{
             display: "flex",
@@ -452,13 +542,18 @@ export function StoryCard({
             fontSize: 48,
           }}
         >
-          {formatKm(totalKm)} กม.
+          {/* โหมด % ผลรวมของเปอร์เซ็นต์ไม่มีความหมาย จึงใช้ค่าเฉลี่ยแทน
+              และต้องลงท้ายด้วย % ไม่ใช่ กม. */}
+          {mode === "percent"
+            ? formatPercent(totalKm)
+            : `${formatKm(totalKm)} กม.`}
         </div>
       </div>
 
       <div
         style={{
           display: "flex",
+          flexShrink: 0,
           marginTop: 24,
           color: MUTED,
           fontSize: 24,

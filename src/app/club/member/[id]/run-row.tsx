@@ -11,15 +11,18 @@ export default function RunRow({
   proofUrl,
   dateLabel,
   canManage,
+  withinWindow,
   hoursLeft,
-  isAdminEdit,
+  viewerIsAdmin,
 }: {
   run: Run;
   proofUrl: string | null;
   dateLabel: string;
   canManage: boolean;
+  /** ยังอยู่ในช่วง 24 ชั่วโมงที่เจ้าของแก้เองได้ไหม */
+  withinWindow: boolean;
   hoursLeft: number;
-  isAdminEdit: boolean;
+  viewerIsAdmin: boolean;
 }) {
   return (
     <li className="space-y-3 rounded-2xl border border-border bg-surface p-4">
@@ -76,10 +79,19 @@ export default function RunRow({
         ) : null}
       </div>
 
-      {canManage && !isAdminEdit ? (
-        <p className="text-xs text-muted">
-          แก้เองได้อีก {hoursLeft} ชั่วโมง หลังจากนั้นต้องให้แอดมินแก้
-        </p>
+      {/* แอดมินที่ดูหน้าตัวเองหลังพ้น 24 ชั่วโมง เคยเห็นว่า
+          "แก้เองได้อีก 0 ชั่วโมง" ซึ่งอ่านแล้วขัดกับปุ่มแก้ที่ยังกดได้อยู่
+          แยกเป็นสองข้อความตามว่ายังอยู่ในช่วงเวลาหรือได้สิทธิ์จากการเป็นแอดมิน */}
+      {canManage ? (
+        withinWindow ? (
+          <p className="text-xs text-muted">
+            แก้เองได้อีก {hoursLeft} ชั่วโมง หลังจากนั้นต้องให้แอดมินแก้
+          </p>
+        ) : viewerIsAdmin ? (
+          <p className="text-xs text-muted">
+            เลยเวลาแก้เองแล้ว แก้ได้เพราะเป็นแอดมิน
+          </p>
+        ) : null
       ) : null}
     </li>
   );

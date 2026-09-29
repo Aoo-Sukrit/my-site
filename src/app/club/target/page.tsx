@@ -208,7 +208,9 @@ async function RevealedPhase() {
           เป้าจริงของทุกคน <span className="text-muted">({rows.length})</span>
         </h2>
         <p className="text-sm text-muted">
-          ไม่บอกว่าใครโหวตใคร ให้เดากันเอง สนุกกว่า
+          <Link href="/club?board=rewards" className="text-accent-strong underline">
+            ดูว่าใครปรับเป้าใครได้ที่แท็บรางวัล
+          </Link>
         </p>
       </div>
 

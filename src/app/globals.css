@@ -15,6 +15,10 @@
   --club-cream: #faf6ea;
   --club-ink: #3b332c;
   --club-line: #9c4a25;
+
+  /* สีของค่าติดลบ เช่นป้ายโหวตที่กดลบเป้าเพื่อน
+     แดงอิฐ ไม่ใช่แดงสด จะได้อยู่ในโทนอุ่นชุดเดิม */
+  --negative: #b3453c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +31,7 @@
     --accent-strong: #e8966b;
     --accent-soft: #34261e;
     --border: #322a24;
+    --negative: #d0645a;
   }
 }
 
@@ -42,6 +47,7 @@
   --color-club-cream: var(--club-cream);
   --color-club-ink: var(--club-ink);
   --color-club-line: var(--club-line);
+  --color-negative: var(--negative);
   --font-sans: var(--font-anuphan);
   --font-display: var(--font-plex-thai-looped);
 }
