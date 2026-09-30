@@ -1,3 +1,5 @@
+import { AVATAR_THUMB_MAX_BYTES, AVATAR_THUMB_WIDTH } from "./avatar-thumb";
+
 /**
  * งานรูปฝั่งเบราว์เซอร์ ใช้ร่วมกันระหว่างรูปโปรไฟล์กับรูปหลักฐานการวิ่ง
  * ไฟล์นี้แตะ document กับ canvas จึงเรียกได้จาก Client Component เท่านั้น
@@ -72,4 +74,37 @@ export async function shrinkToJpeg(
   }
 
   throw new Error("ย่อรูปให้เล็กพอไม่ได้ ลองเลือกรูปอื่น");
+}
+
+/**
+ * รูปโปรไฟล์ขนาดเล็กสำหรับรูปสตอรี่
+ *
+ * ย่อตามความกว้าง ไม่ใช่ด้านยาว เพราะรูปโปรไฟล์เป็นแนวตั้ง 3:4 เสมอ
+ * และสิ่งที่ต้องคุมคือความกว้างที่ไปโผล่ในแก้วบนโพเดียม
+ *
+ * ต่างจาก shrinkToJpeg() ตรงที่ตัวนั้นคุมด้านยาว ใช้กับรูปหลักฐานซึ่งเป็น
+ * ภาพหน้าจอแนวไหนก็ได้
+ */
+export async function makeAvatarThumb(source: Blob): Promise<Blob> {
+  const bitmap = await decodeOriented(source);
+
+  try {
+    const scale = Math.min(1, AVATAR_THUMB_WIDTH / bitmap.width);
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = drawToCanvas(bitmap, width, height);
+
+    for (const quality of [0.8, 0.68, 0.55]) {
+      const blob = await toJpegBlob(canvas, quality);
+      if (blob && blob.size <= AVATAR_THUMB_MAX_BYTES) return blob;
+    }
+
+    // ต่อให้ยังเกินเพดานนิดหน่อยก็ยังเล็กกว่าไฟล์เต็มหลายเท่า ใช้ไปเถอะ
+    const last = await toJpegBlob(canvas, 0.45);
+    if (last) return last;
+  } finally {
+    bitmap.close();
+  }
+
+  throw new Error("สร้างรูปเล็กไม่สำเร็จ");
 }

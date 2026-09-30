@@ -11,16 +11,14 @@ import {
   signAvatarUrls,
 } from "@/lib/runs";
 import { roundPhase } from "@/lib/target-rules";
+import { avatarThumbUrl } from "@/lib/avatar-thumb";
 import { getPercentBoard } from "@/lib/targets";
 
 import {
-  LIST_AVATAR_WIDTH,
-  PODIUM_AVATAR_WIDTH,
   avatarObjectPath,
   fetchImageDataUri,
   loadFonts,
   loadLogoDataUri,
-  transformedAvatarUrl,
 } from "../assets";
 import {
   STORY_HEIGHT,
@@ -30,6 +28,49 @@ import {
   type StoryEntry,
   type StoryMode,
 } from "../story-card";
+
+/**
+ * แคชรูปที่วาดเสร็จแล้วไว้สั้นๆ
+ *
+ * การวาดหนึ่งรูปต้องดึงรูปโปรไฟล์ทุกคนแล้วให้ resvg แปลงเป็น PNG 1080x1920
+ * ซึ่งเป็นงานหนัก แต่คนมักกดดูซ้ำ สลับแท็บไปมา หรือส่งลิงก์ให้เพื่อนกดพร้อมกัน
+ * เก็บผลไว้สองนาทีจึงช่วยได้มาก
+ *
+ * กุญแจรวม "ลายนิ้วมือ" ของข้อมูลไว้ด้วย พอมีคนกรอกผลวิ่งเพิ่ม กุญแจเปลี่ยนเอง
+ * แคชเก่าจึงไม่ถูกหยิบมาใช้ ไม่ต้องรอให้หมดอายุก่อน
+ *
+ * เก็บในหน่วยความจำของ process ซึ่งบน Vercel อยู่ได้เท่าที่ instance นั้นอยู่
+ * ไม่ได้การันตีว่าจะเจอ แต่ตอนเจอก็ประหยัดไปทั้งก้อน
+ */
+const CACHE_TTL_MS = 120_000;
+const CACHE_MAX_ENTRIES = 8;
+
+type CachedImage = { png: ArrayBuffer; expiresAt: number };
+
+const imageCache = new Map<string, CachedImage>();
+
+function readCache(key: string): ArrayBuffer | null {
+  const hit = imageCache.get(key);
+  if (!hit) return null;
+
+  if (Date.now() >= hit.expiresAt) {
+    imageCache.delete(key);
+    return null;
+  }
+
+  return hit.png;
+}
+
+function writeCache(key: string, png: ArrayBuffer) {
+  // Map จำลำดับที่ใส่ไว้ ตัวเก่าสุดจึงอยู่หน้าสุดเสมอ
+  while (imageCache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = imageCache.keys().next().value;
+    if (oldest === undefined) break;
+    imageCache.delete(oldest);
+  }
+
+  imageCache.set(key, { png, expiresAt: Date.now() + CACHE_TTL_MS });
+}
 
 /** แถวกลางที่ทั้งสองกระดานแปลงมาเป็นชนิดเดียวกัน ก่อนส่งให้การ์ดวาด */
 type SourceRow = {
@@ -132,23 +173,33 @@ export async function GET(request: NextRequest) {
     }));
   }
 
-  // ขอรูปย่อจาก Supabase ก่อน ขนาดเท่าที่ใช้จริงในรูปสตอรี่
-  //
-  // สามคนแรกของ sourceRows คือโพเดียม (ทั้งสองกระดานเรียงคนที่มีผลไว้หน้าสุด)
-  // จึงขอใหญ่กว่าอีกนิด ที่เหลือเป็นแถวในรายการซึ่งเล็กมาก
+  // ลายนิ้วมือของข้อมูลที่จะไปโผล่ในรูป เปลี่ยนเมื่อไหร่แคชก็หลุดเอง
+  const fingerprint = sourceRows
+    .map((row) =>
+      [
+        row.member_id,
+        row.total_km,
+        row.percent ?? "",
+        row.final_km ?? "",
+        row.caption ?? "",
+        row.avatar_url ?? "",
+      ].join("|"),
+    )
+    .join(";");
+  const cacheKey = `${mode}:${round?.month ?? "none"}:${fingerprint}`;
+
+  const cached = readCache(cacheKey);
+  if (cached) return send(cached);
+
+  // ใช้รูปเล็กที่เก็บไว้ข้างรูปเต็มตอนอัปโหลด (ดู src/lib/avatar-thumb.ts)
+  // เล็กกว่าไฟล์เต็มราวสิบเท่า ซึ่งเป็นส่วนที่กินเวลาที่สุดของ route นี้
   const avatars = await Promise.all(
-    sourceRows.map((row, index) =>
-      fetchImageDataUri(
-        transformedAvatarUrl(
-          row.avatar_url,
-          index < 3 ? PODIUM_AVATAR_WIDTH : LIST_AVATAR_WIDTH,
-        ),
-      ),
-    ),
+    sourceRows.map((row) => fetchImageDataUri(avatarThumbUrl(row.avatar_url))),
   );
 
-  // คนไหนย่อไม่สำเร็จค่อยถอยไปลิงก์เต็ม ทำเฉพาะคนที่พลาดจริง จะได้ไม่เสียเวลา
-  // ขอลิงก์ที่เซ็นทั้งชุดทั้งที่ปกติไม่ได้ใช้เลย
+  // คนที่อัปรูปไว้ก่อนมีระบบรูปเล็ก จะยังไม่มีไฟล์เล็ก ถอยไปใช้ไฟล์เต็มให้
+  // ทำเฉพาะคนที่พลาดจริง จะได้ไม่ต้องขอลิงก์ที่เซ็นทั้งชุดทั้งที่ปกติไม่ได้ใช้
+  // แอดมินกดปุ่ม "สร้างรูปเล็กให้ทุกคน" ในหน้าแอดมินครั้งเดียวก็หมดปัญหานี้
   // คนไหนได้ null สุดท้ายก็ไปแสดงเป็นตัวอักษรแรกแทน ไม่ทำให้ทั้งรูปพัง
   const missing = sourceRows
     .map((row, index) => ({ row, index }))
@@ -244,24 +295,19 @@ export async function GET(request: NextRequest) {
     };
   }
 
-  function send(png: ArrayBuffer) {
-    return new Response(png, {
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "no-store, max-age=0",
-      },
-    });
-  }
-
   try {
-    return send(await draw("mug"));
+    const png = await draw("mug");
+    writeCache(cacheKey, png);
+    return send(png);
   } catch (error) {
     // แก้วพังแล้ว ลองใหม่ด้วยโพเดียมรูปสี่เหลี่ยมแบบเดิม ซึ่งไม่แตะ svg เลย
     // ได้รูปที่หน้าตาไม่ตรงใจดีกว่าได้ 500
     console.error("[share/image] วาดแบบแก้วไม่สำเร็จ", describe(error, "mug"));
 
     try {
-      return send(await draw("square"));
+      const png = await draw("square");
+      writeCache(cacheKey, png);
+      return send(png);
     } catch (fallbackError) {
       console.error(
         "[share/image] วาดแบบสี่เหลี่ยมก็ไม่สำเร็จ",
@@ -274,4 +320,15 @@ export async function GET(request: NextRequest) {
       });
     }
   }
+}
+
+/** ส่ง PNG ออกไป พร้อมให้เบราว์เซอร์เก็บไว้สั้นๆ เท่ากับแคชฝั่งเซิร์ฟเวอร์ */
+function send(png: ArrayBuffer) {
+  return new Response(png, {
+    headers: {
+      "Content-Type": "image/png",
+      // private เพราะรูปมีรูปโปรไฟล์ของสมาชิก ไม่ควรให้ CDN เก็บไว้ให้คนอื่น
+      "Cache-Control": "private, max-age=120",
+    },
+  });
 }

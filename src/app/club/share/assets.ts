@@ -67,48 +67,6 @@ export function avatarObjectPath(url: string | null): string | null {
 }
 
 /**
- * ขนาดรูปโปรไฟล์ที่ขอจาก Supabase
- *
- * รูปในบัคเก็ตเป็น JPEG ด้านยาวถึง 1400 และหนักได้ถึง 450KB แต่ในรูปสตอรี่
- * รูปบนโพเดียมกว้างจริงราว 245px ส่วนรูปในรายการกว้าง 30–54px เท่านั้น
- * เดิมฝังไฟล์เต็มลงไปทั้ง 14 คน แล้วให้ resvg มาถอดรหัสภาพรวม 20 ล้านพิกเซล
- * ซึ่งเป็นงานหนักที่สุดของทั้ง route
- */
-export const PODIUM_AVATAR_WIDTH = 320;
-export const LIST_AVATAR_WIDTH = 150;
-
-/**
- * ลิงก์รูปย่อจาก Supabase image transformation
- *
- * บัคเก็ต avatars เป็นแบบสาธารณะ จึงเรียก endpoint render/image ได้ตรงๆ
- * ไม่ต้องเซ็นลิงก์ก่อน แล้วขอเป็นขนาดที่ใช้จริง ไบต์ที่ต้องโหลดกับเวลาถอดรหัส
- * จึงลดลงเป็นสิบเท่า
- *
- * คืน null เมื่อ URL ไม่ใช่ของบัคเก็ต avatars ฝั่งเรียกจะได้ถอยไปใช้ลิงก์เดิม
- */
-export function transformedAvatarUrl(
-  url: string | null,
-  width: number,
-): string | null {
-  if (!url) return null;
-
-  const at = url.indexOf(AVATAR_PUBLIC_MARKER);
-  if (at < 0) return null;
-
-  const origin = url.slice(0, at);
-  const path = url.slice(at + AVATAR_PUBLIC_MARKER.length).split("?")[0];
-  if (!path) return null;
-
-  // รูปโปรไฟล์ครอปมาเป็น 3:4 แล้ว ขอให้ตรงสัดส่วนเดิมจะได้ไม่โดนบีบ
-  const height = Math.round((width * 4) / 3);
-
-  return (
-    `${origin}/storage/v1/render/image/public/avatars/${path}` +
-    `?width=${width}&height=${height}&resize=cover&quality=70`
-  );
-}
-
-/**
  * ดึงรูปมาฝังเป็น data URI
  *
  * ดึงมาฝังเองแทนที่จะปล่อยให้ satori ไปโหลด เพราะแบบนี้คุมเวลาและ error ได้

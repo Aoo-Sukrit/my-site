@@ -6,6 +6,12 @@ import type { Area } from "react-easy-crop";
 
 import Alert from "@/components/club/alert";
 import { PortraitAvatar } from "@/components/club/avatar";
+import {
+  AVATAR_BUCKET,
+  avatarPath,
+  avatarThumbPath,
+} from "@/lib/avatar-thumb";
+import { makeAvatarThumb } from "@/lib/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 import ImageCropper, { CROP_ASPECT } from "./image-cropper";
@@ -162,10 +168,10 @@ export default function AvatarUploader({
       if (!user) throw new Error("เซสชันหมดอายุ ลองเข้าสู่ระบบใหม่");
 
       // ชื่อไฟล์คงที่ต่อคน อัปทับของเดิมไปเลย จะได้ไม่มีไฟล์เก่าค้าง
-      const path = `${user.id}/avatar.jpg`;
+      const path = avatarPath(user.id);
 
       const { error: uploadError } = await supabase.storage
-        .from("avatars")
+        .from(AVATAR_BUCKET)
         .upload(path, blob, {
           contentType: "image/jpeg",
           cacheControl: "3600",
@@ -174,7 +180,24 @@ export default function AvatarUploader({
 
       if (uploadError) throw new Error(uploadError.message);
 
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      // เก็บรูปเล็กไว้ข้างๆ ด้วย รูปสตอรี่จะได้ไม่ต้องดึงไฟล์เต็มมาทั้ง 14 คน
+      //
+      // ถ้าขั้นนี้พลาดก็ไม่ล้มทั้งงาน เพราะรูปโปรไฟล์หลักอัปขึ้นไปแล้ว
+      // ฝั่งรูปสตอรี่ถอยไปใช้ไฟล์เต็มเองอยู่แล้วถ้าหารูปเล็กไม่เจอ
+      try {
+        const thumb = await makeAvatarThumb(blob);
+        await supabase.storage
+          .from(AVATAR_BUCKET)
+          .upload(avatarThumbPath(user.id), thumb, {
+            contentType: "image/jpeg",
+            cacheControl: "3600",
+            upsert: true,
+          });
+      } catch {
+        // ไม่ต้องบอกผู้ใช้ เพราะรูปที่เขาเห็นบนเว็บถูกต้องแล้ว
+      }
+
+      const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
       // ?v= ไว้ไล่แคชของเบราว์เซอร์ ไม่งั้นจะยังเห็นรูปเก่าอยู่
       const result = await saveAvatarUrlAction(
         `${data.publicUrl}?v=${Date.now()}`,

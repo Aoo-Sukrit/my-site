@@ -10,6 +10,7 @@ import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
 
+import AvatarThumbs, { type ThumbTarget } from "./avatar-thumbs";
 import ChallengeList from "./challenge-list";
 import { MemberCard, PendingCard, RemovedCard } from "./member-card";
 import PrizeList from "./prize-list";
@@ -56,6 +57,15 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
     (p) => p.status === "approved" || p.status === "blocked",
   );
 
+  // ส่งเฉพาะคนที่มีรูปจริง ปุ่มสร้างรูปเล็กจะได้ไม่ต้องไปไล่คนที่ไม่มีรูป
+  const thumbTargets: ThumbTarget[] = profiles
+    .filter((p) => p.avatar_url !== null && p.status !== "removed")
+    .map((p) => ({
+      id: p.id,
+      nickname: p.nickname,
+      avatarUrl: p.avatar_url as string,
+    }));
+
   return (
     <div className="space-y-10">
       <section className="space-y-2">
@@ -73,6 +83,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
       {error ? <Alert tone="error">{toThaiDbError(error)}</Alert> : null}
 
       <ResultsTime current={round} previous={previousRound} />
+
+      <AvatarThumbs members={thumbTargets} />
 
       {round ? <RoundWindow round={round} /> : null}
 
