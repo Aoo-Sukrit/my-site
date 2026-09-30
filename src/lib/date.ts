@@ -130,3 +130,23 @@ export function bangkokMonthEnd(monthStart: string): Date {
 export function monthHasEnded(monthStart: string): boolean {
   return Date.now() >= bangkokMonthEnd(monthStart).getTime();
 }
+
+/** เลขวันที่ของเดือนตามเวลาไทย ใช้บอกว่า "ตัดสินวันที่ 4" โดยไม่ต้องฝังเลขไว้ */
+export function bangkokDayOfMonth(iso: string): number {
+  return Number(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: CLUB_TIME_ZONE,
+      day: "numeric",
+    }).format(new Date(iso)),
+  );
+}
+
+/**
+ * เหลืออีกกี่วันจนถึงเวลานั้น ปัดขึ้น
+ * วันนี้ยังไม่จบถือว่าเหลือ 1 วัน ถึงเวลาแล้วคืน 0
+ */
+export function daysLeftUntil(iso: string, from: number = Date.now()): number {
+  const left = new Date(iso).getTime() - from;
+  if (left <= 0) return 0;
+  return Math.ceil(left / 86_400_000);
+}

@@ -2,17 +2,20 @@ import Link from "next/link";
 
 import Avatar from "@/components/club/avatar";
 import ConfirmSubmit from "@/components/club/confirm-submit";
-import { monthHasEnded, thaiDateTime } from "@/lib/date";
+import { bangkokDayOfMonth, thaiDateTime } from "@/lib/date";
 import {
   findHolders,
+  holderPhase,
   hoursLeftToEditPrize,
   slotLabel,
   toDistanceHolders,
   toPercentHolders,
   withinPrizeEditWindow,
+  type HolderPhase,
   type HolderRow,
   type PrizeBoard as BoardKind,
 } from "@/lib/prize-rules";
+import { getRoundDeadlines } from "@/lib/challenges";
 import { getRoundPrizes, signPrizeImages } from "@/lib/prizes";
 import { getLeaderboard } from "@/lib/runs";
 import { roundPhase } from "@/lib/target-rules";
@@ -66,14 +69,22 @@ function PrizeImage({
 
 function HolderLine({
   holders,
-  ended,
+  phase,
+  settleDay,
   pendingNote,
 }: {
   holders: HolderRow[];
-  ended: boolean;
+  phase: HolderPhase;
+  settleDay: number | null;
   pendingNote: string | null;
 }) {
-  const label = ended ? "ได้ไปแล้ว" : "ตอนนี้เป็นของ";
+  // ช่วงรอผลวิ่งย้อนหลัง ยังบอกว่าใครนำอยู่ แต่บอกด้วยว่ายังไม่จบ
+  const label =
+    phase === "final"
+      ? "ได้ไปแล้ว"
+      : phase === "waiting"
+        ? `รอผลวิ่งย้อนหลัง ตัดสินวันที่ ${settleDay ?? "-"}`
+        : "ตอนนี้เป็นของ";
 
   if (pendingNote) {
     return (
@@ -121,13 +132,15 @@ function PrizeCard({
   prize,
   imageUrl,
   holders,
-  ended,
+  phase,
+  settleDay,
   pendingNote,
 }: {
   prize: PrizeRow;
   imageUrl: string | null;
   holders: HolderRow[];
-  ended: boolean;
+  phase: HolderPhase;
+  settleDay: number | null;
   pendingNote: string | null;
 }) {
   const secretToOthers = prize.is_secret;
@@ -217,21 +230,33 @@ function PrizeCard({
         </div>
       ) : null}
 
-      <HolderLine holders={holders} ended={ended} pendingNote={pendingNote} />
+      <HolderLine
+        holders={holders}
+        phase={phase}
+        settleDay={settleDay}
+        pendingNote={pendingNote}
+      />
     </li>
   );
 }
 
 export default async function PrizeBoard({ round }: { round: Round }) {
-  const phase = roundPhase(round.target_opens_at, round.target_locks_at);
-  const ended = monthHasEnded(round.month);
+  const targetPhase = roundPhase(round.target_opens_at, round.target_locks_at);
 
-  const [prizes, distanceRows, percentRows] = await Promise.all([
+  const [prizes, distanceRows, percentRows, deadlines] = await Promise.all([
     getRoundPrizes(),
     getLeaderboard(),
     // ก่อนเปิดผลเป้า ฝั่งฐานข้อมูลคืน 0 แถวอยู่แล้ว ไม่ต้องเรียกให้เปลือง
-    phase === "revealed" ? getPercentBoard() : Promise.resolve([]),
+    targetPhase === "revealed" ? getPercentBoard() : Promise.resolve([]),
+    getRoundDeadlines(),
   ]);
+
+  // ของจะเป็นของใครแน่ ต้องรอพ้นช่วงกรอกผลวิ่งย้อนหลังก่อน
+  // ไม่ใช่แค่หมดเดือน เวลาตัดสินมาจากฐานข้อมูล ไม่ได้เขียนวันที่ไว้ตรงนี้
+  const phase = deadlines
+    ? holderPhase(deadlines.month_end, deadlines.settle_at)
+    : "live";
+  const settleDay = deadlines ? bangkokDayOfMonth(deadlines.settle_at) : null;
 
   const signed = await signPrizeImages(
     prizes
@@ -244,7 +269,7 @@ export default async function PrizeBoard({ round }: { round: Round }) {
 
   // กระดาน % ยังไม่เปิดผล ก็ยังไม่รู้ว่าใครครองอันดับไหน
   const percentPending =
-    phase === "revealed"
+    targetPhase === "revealed"
       ? null
       : `รู้ผลหลังเปิดเป้า ${thaiDateTime(round.target_locks_at)}`;
 
@@ -288,7 +313,8 @@ export default async function PrizeBoard({ round }: { round: Round }) {
                       : null
                   }
                   holders={holders}
-                  ended={ended}
+                  phase={phase}
+                  settleDay={settleDay}
                   pendingNote={isDistance ? null : percentPending}
                 />
               );

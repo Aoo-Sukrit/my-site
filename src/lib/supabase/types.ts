@@ -219,3 +219,70 @@ export type PrizeRow = {
   sponsor_nickname: string;
   sponsor_avatar_url: string | null;
 };
+
+// ---------------------------------------------------------------------------
+//  คำท้า (20260930203000_challenges.sql)
+//  มาจากฟังก์ชัน security definer เท่านั้น ตาราง challenges กับ
+//  challenge_stakes ถูกปิดสิทธิ์ไว้หมด แม้ข้อมูลจะไม่ได้ปิดอุบก็ตาม
+// ---------------------------------------------------------------------------
+
+/** เวลาสำคัญของรอบเดือนหนึ่ง มาจาก round_deadlines() */
+export type RoundDeadlines = {
+  month: string;
+  /** สิ้นวันสุดท้ายที่ยังท้า รับ หรือลงเบียร์เพิ่มได้ */
+  lock_at: string;
+  /** เวลาที่ถือว่าผลของเดือนนั้นนิ่งแล้ว ใช้ทั้งคำท้าและระบบรางวัล */
+  settle_at: string;
+  /** เที่ยงคืนขึ้นเดือนใหม่ ใช้เปิดของขวัญที่ปิดอุบ */
+  month_end: string;
+};
+
+export type ChallengeRow = {
+  challenge_id: string;
+  round_month: string;
+  challenger_id: string;
+  challenger_nickname: string;
+  challenger_avatar_url: string | null;
+  runner_id: string;
+  runner_nickname: string;
+  runner_avatar_url: string | null;
+  /** PostgREST ส่ง numeric กลับมาเป็น string เพื่อไม่ให้ความละเอียดหาย */
+  target_km: string;
+  /** ระยะของคนถูกท้า ณ วินาทีที่ถูกท้า */
+  baseline_km: string;
+  bottles: number;
+  /** หนึ่งในเจ็ดแบบ ดู CHALLENGE_STATUS_LABEL ใน challenge-rules.ts */
+  status: string;
+  /** ระยะรวมทั้งเดือนของคนถูกท้า ตัวเดียวกับบนกระดานระยะรวม */
+  runner_total_km: string;
+  reach_bottles: number;
+  miss_bottles: number;
+  /** ข้างที่เราลงไว้ หรือ null เมื่อยังไม่ได้ลง */
+  my_side: string | null;
+  i_am_challenger: boolean;
+  i_am_runner: boolean;
+  lock_at: string;
+  settle_at: string;
+  created_at: string;
+  decided_at: string | null;
+};
+
+export type ChallengeStakeRow = {
+  challenge_id: string;
+  profile_id: string;
+  nickname: string;
+  avatar_url: string | null;
+  side: string;
+  bottles: number;
+  is_me: boolean;
+  created_at: string;
+};
+
+/** คนที่ท้าได้ พร้อมระยะรวมตอนนี้ มาจาก challengeable_members() */
+export type ChallengeableMember = {
+  member_id: string;
+  nickname: string;
+  caption: string | null;
+  avatar_url: string | null;
+  total_km: string;
+};

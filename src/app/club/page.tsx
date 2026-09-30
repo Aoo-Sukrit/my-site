@@ -5,6 +5,7 @@ import Alert from "@/components/club/alert";
 import ClubLogo from "@/components/club-logo";
 import { SubmitButton } from "@/components/club/form-controls";
 import { requireApproved } from "@/lib/auth";
+import { getRoundChallenges, pendingForMe } from "@/lib/challenges";
 import { thaiDateTimeLong, thaiMonthLabel } from "@/lib/date";
 import { monthRange } from "@/lib/run-rules";
 import { getCurrentRound, getLeaderboard } from "@/lib/runs";
@@ -52,6 +53,12 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const percentRows =
     showPercent && phase === "revealed" ? await getPercentBoard() : [];
 
+  // คำท้าที่รอเรากดรับ ต้องเด้งให้เห็นตั้งแต่หน้าแรก ไม่ใช่ซ่อนอยู่ในแท็บรางวัล
+  // เพราะถ้าไม่มีใครกดจนเลยวันปิดรับ คำท้าจะตกไปเฉยๆ โดยไม่มีใครรู้ตัว
+  const myPendingChallenges = round
+    ? pendingForMe(await getRoundChallenges())
+    : [];
+
   const ranked = board.filter((row) => Number(row.total_km) > 0);
   const idle = board.filter((row) => Number(row.total_km) <= 0);
   const groupTotal = ranked.reduce((sum, row) => sum + Number(row.total_km), 0);
@@ -65,6 +72,23 @@ export default async function ClubPage(props: PageProps<"/club">) {
       ) : null}
       {typeof params.msg === "string" ? (
         <Alert tone="success">{params.msg}</Alert>
+      ) : null}
+
+      {myPendingChallenges.length > 0 ? (
+        <Link
+          href="/club?board=rewards"
+          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
+        >
+          <span>
+            <span className="block font-display text-base font-semibold">
+              มีคนท้าคุณ {myPendingChallenges.length} คำท้า
+            </span>
+            <span className="block text-sm">รอคุณกดรับ</span>
+          </span>
+          <span aria-hidden className="text-xl">
+            →
+          </span>
+        </Link>
       ) : null}
 
       <header className="space-y-3 text-center">

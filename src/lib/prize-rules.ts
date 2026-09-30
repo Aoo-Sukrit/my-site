@@ -93,6 +93,30 @@ export function hoursLeftToEditPrize(createdAt: string): number {
  * eligible แปลว่ามีผลงานพอจะนับเป็นเจ้าของอันดับได้จริง
  * กระดานระยะรวมคือกรอกผลวิ่งแล้ว กระดาน % คือตั้งเป้าแล้ว
  */
+/**
+ * ช่วงเวลาของรางวัล สามช่วง
+ *   live    ยังอยู่ในเดือน ใครนำอยู่ก็ยังพลิกได้
+ *   waiting เดือนจบแล้ว แต่ยังกรอกผลวิ่งย้อนหลังได้ คนถือรางวัลยังเปลี่ยนได้
+ *   final   พ้นเวลากรอกย้อนหลังแล้ว ตัวเลขนิ่ง ของเป็นของคนนั้นจริง
+ *
+ * เคยเป็นบั๊ก การ์ดพลิกเป็น "ได้ไปแล้ว" ตั้งแต่วินาทีที่เดือนจบ
+ * ทั้งที่อีกสามวันยังมีคนกรอกผลย้อนหลังเข้ามาแซงได้
+ *
+ * เวลาทั้งสองค่ามาจาก round_deadlines() ฝั่งฐานข้อมูล ซึ่งคำนวณจาก
+ * backdate_grace_days() ที่เดียว ไฟล์นี้จึงไม่มีเลข 4 อยู่เลย
+ */
+export type HolderPhase = "live" | "waiting" | "final";
+
+export function holderPhase(
+  monthEndIso: string,
+  settleAtIso: string,
+  now: number = Date.now(),
+): HolderPhase {
+  if (now < new Date(monthEndIso).getTime()) return "live";
+  if (now < new Date(settleAtIso).getTime()) return "waiting";
+  return "final";
+}
+
 export type HolderRow = {
   memberId: string;
   nickname: string;

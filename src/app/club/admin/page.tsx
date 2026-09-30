@@ -9,6 +9,7 @@ import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
 
+import ChallengeList from "./challenge-list";
 import { MemberCard, PendingCard, RemovedCard } from "./member-card";
 import PrizeList from "./prize-list";
 import RoundWindow from "./round-window";
@@ -68,6 +69,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
       {round ? <RoundWindow round={round} /> : null}
 
       {round ? <PrizeList round={round} /> : null}
+
+      {round ? <ChallengeList round={round} /> : null}
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-medium">
