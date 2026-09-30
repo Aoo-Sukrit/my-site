@@ -354,9 +354,12 @@ function ChallengeCard({
           <span className="text-xs text-muted">
             {isSettled(status)
               ? `ตัดสินวันที่ ${settleDay} แล้ว`
-              : reachedTarget
-                ? `รอผลวิ่งย้อนหลัง ตัดสินวันที่ ${settleDay}`
-                : `เหลือ ${formatKm(remainingKm(totalKm, targetKm))} กม. · อีก ${daysLeft} วัน`}
+              : daysLeft === 0
+                ? // เดือนจบแล้วแต่ยังกรอกผลย้อนหลังได้ ตัวเลขยังขยับได้อยู่
+                  `รอผลวิ่งย้อนหลัง ตัดสินวันที่ ${settleDay}`
+                : reachedTarget
+                  ? `ถึงเป้าแล้ว · อีก ${daysLeft} วันจบเดือน`
+                  : `เหลือ ${formatKm(remainingKm(totalKm, targetKm))} กม. · อีก ${daysLeft} วัน`}
           </span>
         </div>
       </div>
