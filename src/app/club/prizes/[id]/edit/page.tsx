@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { requireApproved } from "@/lib/auth";
 import {
+  BOOBY_SLOT,
   hoursLeftToEditPrize,
   isPrizeBoard,
   withinPrizeEditWindow,
@@ -55,7 +56,7 @@ export default async function EditPrizePage(
         }
         defaults={{
           board: isPrizeBoard(prize.board) ? prize.board : "distance",
-          rank: prize.is_last ? "last" : String(prize.rank_no ?? 1),
+          rank: prize.is_booby ? BOOBY_SLOT : String(prize.rank_no ?? 1),
           title: prize.title ?? "",
           detail: prize.detail ?? "",
           isHidden: prize.is_secret,

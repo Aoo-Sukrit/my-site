@@ -17,8 +17,14 @@ export const PRIZE_TITLE_MAX = 60;
 export const PRIZE_DETAIL_MAX = 200;
 export const PRIZE_EDIT_WINDOW_HOURS = 24;
 
-/** อันดับที่เลือกได้ 1 ถึง 10 ส่วนอันดับสุดท้ายเป็นตัวเลือกแยก */
+/** อันดับที่เลือกได้ 1 ถึง 10 ส่วนบูบี้เป็นตัวเลือกแยก */
 export const PRIZE_RANKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
+/**
+ * ค่าที่ฟอร์มใช้แทนบูบี้
+ * เก็บไว้ที่นี่ที่เดียว ฟอร์มกับ Server Action จะได้ไม่พิมพ์สตริงไม่ตรงกัน
+ */
+export const BOOBY_SLOT = "booby";
 
 export const BOARD_LABEL: Record<PrizeBoard, string> = {
   distance: "ระยะรวม",
@@ -29,17 +35,17 @@ export function isPrizeBoard(value: unknown): value is PrizeBoard {
   return value === "distance" || value === "percent";
 }
 
-export function rankLabel(rankNo: number | null, isLast: boolean): string {
-  return isLast ? "อันดับสุดท้าย" : `อันดับ ${rankNo}`;
+export function rankLabel(rankNo: number | null, isBooby: boolean): string {
+  return isBooby ? "บูบี้" : `อันดับ ${rankNo}`;
 }
 
 /** ป้ายบนการ์ด เช่น "อันดับ 1 · ระยะรวม" */
 export function slotLabel(
   board: PrizeBoard,
   rankNo: number | null,
-  isLast: boolean,
+  isBooby: boolean,
 ): string {
-  return `${rankLabel(rankNo, isLast)} · ${BOARD_LABEL[board]}`;
+  return `${rankLabel(rankNo, isBooby)} · ${BOARD_LABEL[board]}`;
 }
 
 export type RuleCheck = { ok: true } | { ok: false; reason: string };
@@ -122,6 +128,8 @@ export type HolderRow = {
   nickname: string;
   avatarUrl: string | null;
   rankNo: number;
+  /** ตัวเลขดิบที่ใช้จัดอันดับ ระยะรวมเป็นกิโล กระดาน % เป็นเปอร์เซ็นต์ */
+  value: number;
   valueLabel: string;
   eligible: boolean;
 };
@@ -140,6 +148,7 @@ export function toDistanceHolders(
     nickname: row.nickname,
     avatarUrl: row.avatar_url,
     rankNo: row.rank_no,
+    value: Number(row.total_km),
     valueLabel: `${formatKm(row.total_km)} กม.`,
     eligible: Number(row.total_km) > 0,
   }));
@@ -159,6 +168,7 @@ export function toPercentHolders(
     nickname: row.nickname,
     avatarUrl: row.avatar_url,
     rankNo: row.rank_no,
+    value: Number(row.percent ?? 0),
     valueLabel: formatPercent(row.percent),
     eligible: row.percent !== null,
   }));
@@ -169,20 +179,39 @@ export function toPercentHolders(
  *
  * นับเฉพาะคนที่ eligible เพราะถ้าไม่กรองแล้วมีคนวิ่งแค่สองคน
  * "อันดับ 3" จะกลายเป็นกองคนที่ได้ 0 กม. ซึ่งไม่ใช่เจ้าของอันดับจริง
+ * กระดานระยะรวมนับเฉพาะคนที่กรอกผลวิ่งแล้ว กระดาน % นับเฉพาะคนที่ตั้งเป้าแล้ว
  * ไม่มีใครเข้าเงื่อนไขก็คืนอาร์เรย์ว่าง แล้วหน้าเว็บเขียนว่า "ยังไม่มีใคร"
  */
 export function findHolders(
   rows: HolderRow[],
   rankNo: number | null,
-  isLast: boolean,
+  isBooby: boolean,
 ): HolderRow[] {
   const eligible = rows.filter((row) => row.eligible);
   if (eligible.length === 0) return [];
 
-  if (isLast) {
-    const lastRank = Math.max(...eligible.map((row) => row.rankNo));
-    return eligible.filter((row) => row.rankNo === lastRank);
-  }
+  if (isBooby) return findBooby(eligible);
 
   return eligible.filter((row) => row.rankNo === rankNo);
+}
+
+/**
+ * บูบี้ คนที่มีค่าน้อยเป็นอันดับสอง
+ *
+ * คิดจาก "ค่าที่ต่างกัน" ไม่ใช่จากจำนวนคน
+ *   50, 20, 5, 5  ->  ที่โหล่คือสองคนที่ได้ 5  ->  บูบี้คือคนที่ได้ 20
+ * ถ้าไม่ทำแบบนี้ พอมีคนรั้งท้ายเสมอกันสองคน คนหนึ่งจะกลายเป็นบูบี้ทั้งที่
+ * ได้เท่ากับที่โหล่เป๊ะ ซึ่งอธิบายกับเพื่อนในกลุ่มไม่ได้
+ *
+ * เสมอกันที่ค่าบูบี้ก็ได้ทุกคน และถ้าค่าที่ต่างกันมีไม่ถึงสองค่า
+ * (มีคนเล่นคนเดียว หรือทุกคนได้เท่ากันหมด) แปลว่ายังไม่มีบูบี้
+ */
+function findBooby(eligible: HolderRow[]): HolderRow[] {
+  const values = [...new Set(eligible.map((row) => row.value))].sort(
+    (a, b) => a - b,
+  );
+  if (values.length < 2) return [];
+
+  const boobyValue = values[1];
+  return eligible.filter((row) => row.value === boobyValue);
 }

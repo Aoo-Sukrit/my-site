@@ -155,7 +155,7 @@ function PrizeCard({
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent-strong">
-              {slotLabel(prize.board as BoardKind, prize.rank_no, prize.is_last)}
+              {slotLabel(prize.board as BoardKind, prize.rank_no, prize.is_booby)}
             </span>
             {prize.is_mine ? (
               <span className="rounded-full bg-club-line px-2.5 py-0.5 text-xs text-background">
@@ -300,7 +300,7 @@ export default async function PrizeBoard({ round }: { round: Round }) {
               const holders = findHolders(
                 isDistance ? distanceHolders : percentHolders,
                 prize.rank_no,
-                prize.is_last,
+                prize.is_booby,
               );
 
               return (

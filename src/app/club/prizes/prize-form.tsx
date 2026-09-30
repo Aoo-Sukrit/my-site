@@ -7,6 +7,7 @@ import Alert from "@/components/club/alert";
 import { MAX_UPLOAD_BYTES, shrinkToJpeg } from "@/lib/image";
 import {
   BOARD_LABEL,
+  BOOBY_SLOT,
   PRIZE_DETAIL_MAX,
   PRIZE_EDIT_WINDOW_HOURS,
   PRIZE_RANKS,
@@ -25,7 +26,7 @@ import {
 
 export type PrizeFormDefaults = {
   board: PrizeBoard;
-  /** "last" หรือเลข 1 ถึง 10 เป็นสตริง */
+  /** BOOBY_SLOT หรือเลข 1 ถึง 10 เป็นสตริง */
   rank: string;
   title: string;
   detail: string;
@@ -194,15 +195,19 @@ export default function PrizeForm({
           ))}
           <button
             type="button"
-            onClick={() => setRank("last")}
-            aria-pressed={rank === "last"}
-            className={`${CHIP} ${rank === "last" ? CHIP_ON : CHIP_OFF}`}
+            onClick={() => setRank(BOOBY_SLOT)}
+            aria-pressed={rank === BOOBY_SLOT}
+            className={`${CHIP} ${rank === BOOBY_SLOT ? CHIP_ON : CHIP_OFF}`}
           >
-            อันดับสุดท้าย
+            บูบี้ (รองสุดท้าย)
           </button>
         </div>
         <p className="text-xs text-muted">
           อันดับเดียวกันมีหลายรางวัลซ้อนกันได้ ไม่ต้องกลัวชนกับของคนอื่น
+        </p>
+        <p className="text-xs text-muted">
+          บูบี้คือคนที่มีค่าน้อยเป็นอันดับสอง นับเฉพาะคนที่อยู่ในเกมจริง
+          เช่นระยะ 50 · 20 · 5 · 5 ที่โหล่คือสองคนที่ได้ 5 บูบี้คือคนที่ได้ 20
         </p>
       </fieldset>
 

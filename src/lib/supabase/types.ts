@@ -205,7 +205,7 @@ export type PrizeRow = {
   prize_id: string;
   board: "distance" | "percent";
   rank_no: number | null;
-  is_last: boolean;
+  is_booby: boolean;
   /** null เมื่อยังปิดอุบและคนดูไม่ใช่คนให้ */
   title: string | null;
   detail: string | null;

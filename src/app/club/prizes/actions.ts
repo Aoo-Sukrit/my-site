@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireApproved } from "@/lib/auth";
 import {
+  BOOBY_SLOT,
   checkPrizeDetail,
   checkPrizeTitle,
   isPrizeBoard,
@@ -14,7 +15,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type PrizeFormValues = {
   board: string;
-  /** "last" หรือเลข 1 ถึง 10 เป็นสตริง */
+  /** BOOBY_SLOT หรือเลข 1 ถึง 10 เป็นสตริง */
   rank: string;
   title: string;
   detail: string;
@@ -30,19 +31,19 @@ function refresh() {
   revalidatePath("/club/admin");
 }
 
-/** แปลงค่าจากฟอร์มเป็นคู่ rank_no / is_last ที่ฐานข้อมูลต้องการ */
-function parseRank(rank: string): { rankNo: number | null; isLast: boolean } {
-  if (rank === "last") return { rankNo: null, isLast: true };
+/** แปลงค่าจากฟอร์มเป็นคู่ rank_no / is_booby ที่ฐานข้อมูลต้องการ */
+function parseRank(rank: string): { rankNo: number | null; isBooby: boolean } {
+  if (rank === BOOBY_SLOT) return { rankNo: null, isBooby: true };
   const parsed = Number(rank);
-  return { rankNo: Number.isInteger(parsed) ? parsed : null, isLast: false };
+  return { rankNo: Number.isInteger(parsed) ? parsed : null, isBooby: false };
 }
 
 function validate(values: PrizeFormValues): string | null {
   if (!isPrizeBoard(values.board)) return "เลือกกระดานก่อน";
 
-  const { rankNo, isLast } = parseRank(values.rank);
-  if (!isLast && (rankNo === null || rankNo < 1 || rankNo > 10)) {
-    return "เลือกอันดับ 1 ถึง 10 หรืออันดับสุดท้าย";
+  const { rankNo, isBooby } = parseRank(values.rank);
+  if (!isBooby && (rankNo === null || rankNo < 1 || rankNo > 10)) {
+    return "เลือกอันดับ 1 ถึง 10 หรือบูบี้";
   }
 
   const title = checkPrizeTitle(values.title);
@@ -71,13 +72,13 @@ export async function createPrizeAction(
     return { error: "ที่อยู่ของรูปไม่ถูกต้อง", ok: false };
   }
 
-  const { rankNo, isLast } = parseRank(values.rank);
+  const { rankNo, isBooby } = parseRank(values.rank);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("create_prize", {
     p_board: values.board,
     p_rank_no: rankNo,
-    p_is_last: isLast,
+    p_is_booby: isBooby,
     p_title: values.title,
     p_detail: values.detail,
     p_image_path: values.imagePath,
@@ -103,14 +104,14 @@ export async function updatePrizeAction(
     return { error: "ที่อยู่ของรูปไม่ถูกต้อง", ok: false };
   }
 
-  const { rankNo, isLast } = parseRank(values.rank);
+  const { rankNo, isBooby } = parseRank(values.rank);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("update_prize", {
     p_prize_id: prizeId,
     p_board: values.board,
     p_rank_no: rankNo,
-    p_is_last: isLast,
+    p_is_booby: isBooby,
     p_title: values.title,
     p_detail: values.detail,
     // ส่ง null แปลว่าไม่ได้เปลี่ยนรูป ฝั่งฐานข้อมูลจะเก็บของเดิมไว้

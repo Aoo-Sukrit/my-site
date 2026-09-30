@@ -46,7 +46,7 @@ export default async function PrizeList({ round }: { round: Round }) {
                     {slotLabel(
                       prize.board as PrizeBoard,
                       prize.rank_no,
-                      prize.is_last,
+                      prize.is_booby,
                     )}
                   </span>
                   <p className="text-sm font-medium">
