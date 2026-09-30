@@ -16,6 +16,11 @@
   --club-ink: #3b332c;
   --club-line: #9c4a25;
 
+  /* สีทองของเงาแก้วอันดับ 1 บนโพเดียม มาจากกระดาน PNG ที่ใช้ในกลุ่ม
+     ตรึงค่าเหมือนสามตัวข้างบน เพราะต้องเป็นสีเดียวกันทั้งบนเว็บและในรูปสตอรี่
+     ไม่ว่าคนดูจะเปิดโหมดไหน */
+  --club-gold: #d8890c;
+
   /* สีของค่าติดลบ เช่นป้ายโหวตที่กดลบเป้าเพื่อน
      แดงอิฐ ไม่ใช่แดงสด จะได้อยู่ในโทนอุ่นชุดเดิม */
   --negative: #b3453c;
@@ -47,6 +52,7 @@
   --color-club-cream: var(--club-cream);
   --color-club-ink: var(--club-ink);
   --color-club-line: var(--club-line);
+  --color-club-gold: var(--club-gold);
   --color-negative: var(--negative);
   --font-sans: var(--font-anuphan);
   --font-display: var(--font-plex-thai-looped);

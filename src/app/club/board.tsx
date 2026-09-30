@@ -1,31 +1,12 @@
 import Link from "next/link";
 
 import { PortraitAvatar } from "@/components/club/avatar";
+import BeerMug from "@/components/club/beer-mug";
 import { formatKm, formatPercent } from "@/lib/date";
 import type { LeaderboardRow, PercentRow } from "@/lib/supabase/types";
 
 /** อันดับ 1 กลางและใหญ่กว่า ตามลำดับการวางแบบโพเดียมจริง 2 - 1 - 3 */
 const PODIUM_ORDER = [1, 0, 2] as const;
-
-function RankBadge({
-  rank,
-  highlight,
-}: {
-  rank: number;
-  highlight?: boolean;
-}) {
-  return (
-    <span
-      className={`absolute -bottom-3 left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full text-xs font-semibold ${
-        highlight
-          ? "bg-club-line text-background"
-          : "border border-club-line bg-background text-club-line"
-      }`}
-    >
-      {rank}
-    </span>
-  );
-}
 
 function PodiumSlot({ row, first }: { row: LeaderboardRow; first: boolean }) {
   return (
@@ -33,17 +14,16 @@ function PodiumSlot({ row, first }: { row: LeaderboardRow; first: boolean }) {
       href={`/club/member/${row.member_id}`}
       className="block text-center transition-opacity hover:opacity-90"
     >
-      <div className="relative">
-        <PortraitAvatar
-          src={row.avatar_url}
-          nickname={row.nickname}
-          className={first ? "ring-2 ring-club-line" : ""}
-        />
-        <RankBadge rank={row.rank_no} highlight={first} />
-      </div>
+      <BeerMug
+        uid={row.member_id}
+        src={row.avatar_url}
+        nickname={row.nickname}
+        rank={row.rank_no}
+        first={first}
+      />
 
       <p
-        className={`mt-5 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
+        className={`mt-2 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
       >
         {row.nickname}
       </p>
@@ -211,17 +191,16 @@ function PercentSlot({ row, first }: { row: PercentRow; first: boolean }) {
       href={`/club/member/${row.member_id}`}
       className="block text-center transition-opacity hover:opacity-90"
     >
-      <div className="relative">
-        <PortraitAvatar
-          src={row.avatar_url}
-          nickname={row.nickname}
-          className={first ? "ring-2 ring-club-line" : ""}
-        />
-        <RankBadge rank={row.rank_no} highlight={first} />
-      </div>
+      <BeerMug
+        uid={row.member_id}
+        src={row.avatar_url}
+        nickname={row.nickname}
+        rank={row.rank_no}
+        first={first}
+      />
 
       <p
-        className={`mt-5 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
+        className={`mt-2 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
       >
         {row.nickname}
       </p>
