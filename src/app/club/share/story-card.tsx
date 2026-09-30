@@ -1,18 +1,3 @@
-import {
-  MUG_BADGE,
-  MUG_BADGE_FONT,
-  MUG_BODY_PATH,
-  MUG_FOAM_PATH,
-  MUG_HANDLE_PATH,
-  MUG_HANDLE_STROKE,
-  MUG_INITIAL_FONT,
-  MUG_INNER,
-  MUG_PHOTO_BOX,
-  MUG_PRINT,
-  MUG_SHADOW_OFFSET,
-  MUG_STROKE,
-  MUG_VIEW,
-} from "@/lib/beer-mug";
 import { formatKm, formatPercent } from "@/lib/date";
 
 /**
@@ -45,15 +30,7 @@ const MAX_ROWS = 7;
  * ตรึงความสูงกล่องรูปไว้เท่ากัน แล้ววางรูปชิดล่างในกล่อง
  * ชื่อกับระยะของทั้งสามช่องจึงเริ่มที่ระดับเดียวกันเสมอ
  */
-const MUG_WIDTH_FIRST = 360;
-const MUG_WIDTH_SIDE = 276;
-
-/** แก้วสูงเท่าไหร่เมื่อกว้างเท่านี้ อัตราส่วนล็อกตามกรอบวาด */
-function mugHeight(width: number) {
-  return Math.round((width * MUG_VIEW.height) / MUG_VIEW.width);
-}
-
-const PODIUM_PHOTO_BOX = mugHeight(MUG_WIDTH_FIRST);
+const PODIUM_PHOTO_BOX = 360;
 
 /**
  * ตัดข้อความให้สั้นพอที่จะไม่ล้นกรอบ
@@ -157,130 +134,6 @@ function Photo({
   );
 }
 
-/**
- * รูปคนอยู่ในแก้วเบียร์ สำหรับรูปสตอรี่
- *
- * ทรงแก้วเป็น <svg> เหมือนฝั่งเว็บ แต่ตัวหนังสือ (เลขอันดับกับตัวอักษรแรก)
- * ต้องเป็น <div> วางทับข้างนอก svg เพราะ satori พังทั้งรูปถ้ามี <text> ใน svg
- * path ทุกเส้นมาจาก src/lib/beer-mug.ts ชุดเดียวกับฝั่งเว็บ
- */
-function StoryMug({
-  entry,
-  width,
-  first,
-}: {
-  entry: StoryEntry;
-  width: number;
-  first: boolean;
-}) {
-  const height = mugHeight(width);
-  const scale = width / MUG_VIEW.width;
-  const shadow = first ? MUG_PRINT.goldShadow : MUG_PRINT.inkShadow;
-  const clipId = `mug-${entry.memberId}`;
-  const badgeSize = MUG_BADGE.r * 2 * scale;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        position: "relative",
-        width,
-        height,
-      }}
-    >
-      <svg width={width} height={height} viewBox={`0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}`}>
-        <defs>
-          <clipPath id={clipId}>
-            <path d={MUG_BODY_PATH} />
-          </clipPath>
-        </defs>
-        <g
-          transform={`translate(${MUG_SHADOW_OFFSET},${MUG_SHADOW_OFFSET})`}
-          fill={shadow}
-          stroke={shadow}
-        >
-          <path d={MUG_HANDLE_PATH} fill="none" strokeWidth={MUG_HANDLE_STROKE} />
-          <path d={MUG_FOAM_PATH} />
-          <path d={MUG_BODY_PATH} />
-        </g>
-        <path
-          d={MUG_HANDLE_PATH}
-          fill="none"
-          stroke={MUG_PRINT.outline}
-          strokeWidth={MUG_HANDLE_STROKE}
-        />
-        <path d={MUG_BODY_PATH} fill={MUG_PRINT.emptyFill} />
-        {entry.avatar ? (
-          <image
-            href={entry.avatar}
-            x={MUG_PHOTO_BOX.x}
-            y={MUG_PHOTO_BOX.y}
-            width={MUG_PHOTO_BOX.width}
-            height={MUG_PHOTO_BOX.height}
-            preserveAspectRatio="xMidYMid slice"
-            clipPath={`url(#${clipId})`}
-          />
-        ) : null}
-        <path
-          d={MUG_BODY_PATH}
-          fill="none"
-          stroke={MUG_PRINT.outline}
-          strokeWidth={MUG_STROKE}
-          strokeLinejoin="round"
-        />
-        <path
-          d={MUG_FOAM_PATH}
-          fill={MUG_PRINT.foam}
-          stroke={MUG_PRINT.outline}
-          strokeWidth={MUG_STROKE}
-          strokeLinejoin="round"
-        />
-        <circle cx={MUG_BADGE.cx} cy={MUG_BADGE.cy} r={MUG_BADGE.r} fill={shadow} />
-      </svg>
-
-      {entry.avatar ? null : (
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            left: MUG_INNER.x * scale,
-            top: MUG_INNER.y * scale,
-            width: MUG_INNER.width * scale,
-            height: MUG_INNER.height * scale,
-            alignItems: "center",
-            justifyContent: "center",
-            color: MUG_PRINT.emptyText,
-            fontFamily: "PlexThai",
-            fontWeight: 600,
-            fontSize: Math.round(MUG_INITIAL_FONT * scale),
-          }}
-        >
-          {entry.nickname.slice(0, 1).toUpperCase()}
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          position: "absolute",
-          left: (MUG_BADGE.cx - MUG_BADGE.r) * scale,
-          top: (MUG_BADGE.cy - MUG_BADGE.r) * scale,
-          width: badgeSize,
-          height: badgeSize,
-          alignItems: "center",
-          justifyContent: "center",
-          color: MUG_PRINT.badgeText,
-          fontFamily: "PlexThai",
-          fontWeight: 600,
-          fontSize: Math.round(MUG_BADGE_FONT * scale),
-        }}
-      >
-        {entry.rankNo}
-      </div>
-    </div>
-  );
-}
-
 function PodiumSlot({
   entry,
   first,
@@ -290,7 +143,8 @@ function PodiumSlot({
   first: boolean;
   mode: StoryMode;
 }) {
-  const width = first ? MUG_WIDTH_FIRST : MUG_WIDTH_SIDE;
+  const width = first ? 270 : 210;
+  const height = first ? 360 : 280;
   const caption = truncate(entry.caption, first ? 28 : 22);
   const small = smallLine(entry, mode);
 
@@ -310,7 +164,37 @@ function PodiumSlot({
           alignItems: "flex-end",
         }}
       >
-        <StoryMug entry={entry} width={width} first={first} />
+        <div style={{ display: "flex", position: "relative" }}>
+          <Photo
+            avatar={entry.avatar}
+            nickname={entry.nickname}
+            width={width}
+            height={height}
+            radius={28}
+            fontSize={first ? 120 : 96}
+          />
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              bottom: -26,
+              left: width / 2 - 26,
+              width: 52,
+              height: 52,
+              borderRadius: 26,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: first ? ACCENT : CREAM,
+              border: `3px solid ${ACCENT}`,
+              color: first ? CREAM : ACCENT,
+              fontFamily: "PlexThai",
+              fontWeight: 600,
+              fontSize: 28,
+            }}
+          >
+            {entry.rankNo}
+          </div>
+        </div>
       </div>
 
       {/* กันที่ให้ชื่อสองบรรทัดเสมอ ชื่อยาวอย่าง "angkuji run slow" จะได้ไม่
@@ -320,11 +204,8 @@ function PodiumSlot({
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "center",
-          marginTop: 14,
-          // ตรึงความสูงด้วยฟอนต์ตัวใหญ่สุดเสมอ ไม่ใช่ตามขนาดของช่องตัวเอง
-          // ไม่งั้นช่องอันดับ 1 ซึ่งตัวหนังสือใหญ่กว่าจะดันบรรทัดตัวเลขลงไปต่ำกว่า
-          // อีกสองช่อง แถวตัวเลขของโพเดียมจะไม่ตรงแนวกัน
-          height: Math.round(34 * 1.22 * 2),
+          marginTop: 38,
+          height: Math.round((first ? 34 : 28) * 1.22 * 2),
           width,
           overflow: "hidden",
           textAlign: "center",

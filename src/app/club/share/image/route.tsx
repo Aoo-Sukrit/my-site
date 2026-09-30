@@ -160,26 +160,57 @@ export async function GET(request: NextRequest) {
     ? `1–${Number(monthRange(round.month.slice(0, 7)).max.slice(8, 10))} ${thaiMonthLabel(round.month)}`
     : "ยังไม่มีรอบของเดือนนี้";
 
-  return new ImageResponse(
-    (
-      <StoryCard
-        mode={mode}
-        logo={logo}
-        periodLabel={periodLabel}
-        memberCount={entries.length}
-        podium={active.slice(0, 3)}
-        rows={[...active.slice(3), ...resting]}
-        totalKm={summary}
-        totalLabel={mode === "percent" ? "เฉลี่ยทั้งกลุ่ม" : "รวมทั้งกลุ่ม"}
-      />
-    ),
-    {
-      width: STORY_WIDTH,
-      height: STORY_HEIGHT,
-      fonts,
+  // วาดให้เสร็จทั้งรูปตรงนี้เลย ไม่ปล่อยให้สตรีมออกไปแล้วค่อยพังกลางทาง
+  //
+  // ImageResponse คืน Response ที่ body เป็นสตรีม การวาดจริงเกิดตอนมีคนอ่าน
+  // สตรีมนั้น ซึ่งอยู่นอก try/catch ของเรา ถ้าพังตรงนั้นจะได้แค่
+  // FUNCTION_INVOCATION_FAILED เปล่าๆ ใน log โดยไม่รู้ว่าอะไรพัง
+  // เรียก arrayBuffer() ก่อน ทำให้ error เด้งขึ้นมาให้จับและเขียน log ได้
+  //
+  // หมายเหตุ ถ้าตัว resvg ข้างในพังระดับ process (native panic หรือหน่วยความจำหมด)
+  // try/catch ก็ยังช่วยไม่ได้ แต่อย่างน้อย error ฝั่ง JS ทั้งหมดจะมีข้อความให้ดู
+  try {
+    const image = new ImageResponse(
+      (
+        <StoryCard
+          mode={mode}
+          logo={logo}
+          periodLabel={periodLabel}
+          memberCount={entries.length}
+          podium={active.slice(0, 3)}
+          rows={[...active.slice(3), ...resting]}
+          totalKm={summary}
+          totalLabel={mode === "percent" ? "เฉลี่ยทั้งกลุ่ม" : "รวมทั้งกลุ่ม"}
+        />
+      ),
+      { width: STORY_WIDTH, height: STORY_HEIGHT, fonts },
+    );
+
+    const png = await image.arrayBuffer();
+
+    return new Response(png, {
       headers: {
+        "Content-Type": "image/png",
         "Cache-Control": "no-store, max-age=0",
       },
-    },
-  );
+    });
+  } catch (error) {
+    // เขียนรายละเอียดเท่าที่ช่วยไล่ปัญหาได้ โดยไม่หลุดข้อมูลส่วนตัวของสมาชิก
+    console.error("[share/image] วาดรูปสตอรี่ไม่สำเร็จ", {
+      mode,
+      memberCount: entries.length,
+      withAvatar: entries.filter((entry) => entry.avatar !== null).length,
+      avatarBytes: entries.reduce(
+        (sum, entry) => sum + (entry.avatar?.length ?? 0),
+        0,
+      ),
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return new Response("วาดรูปไม่สำเร็จ ลองใหม่อีกครั้ง", {
+      status: 500,
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
+  }
 }
