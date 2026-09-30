@@ -18,6 +18,7 @@ import {
   STORY_HEIGHT,
   STORY_WIDTH,
   StoryCard,
+  type PodiumStyle,
   type StoryEntry,
   type StoryMode,
 } from "../story-card";
@@ -160,16 +161,15 @@ export async function GET(request: NextRequest) {
     ? `1–${Number(monthRange(round.month.slice(0, 7)).max.slice(8, 10))} ${thaiMonthLabel(round.month)}`
     : "ยังไม่มีรอบของเดือนนี้";
 
-  // วาดให้เสร็จทั้งรูปตรงนี้เลย ไม่ปล่อยให้สตรีมออกไปแล้วค่อยพังกลางทาง
-  //
-  // ImageResponse คืน Response ที่ body เป็นสตรีม การวาดจริงเกิดตอนมีคนอ่าน
-  // สตรีมนั้น ซึ่งอยู่นอก try/catch ของเรา ถ้าพังตรงนั้นจะได้แค่
-  // FUNCTION_INVOCATION_FAILED เปล่าๆ ใน log โดยไม่รู้ว่าอะไรพัง
-  // เรียก arrayBuffer() ก่อน ทำให้ error เด้งขึ้นมาให้จับและเขียน log ได้
-  //
-  // หมายเหตุ ถ้าตัว resvg ข้างในพังระดับ process (native panic หรือหน่วยความจำหมด)
-  // try/catch ก็ยังช่วยไม่ได้ แต่อย่างน้อย error ฝั่ง JS ทั้งหมดจะมีข้อความให้ดู
-  try {
+  /**
+   * วาดให้เสร็จทั้งรูปตรงนี้เลย ไม่ปล่อยให้สตรีมออกไปแล้วค่อยพังกลางทาง
+   *
+   * ImageResponse คืน Response ที่ body เป็นสตรีม การวาดจริงเกิดตอนมีคนอ่าน
+   * สตรีมนั้น ซึ่งอยู่นอก try/catch ของเรา ถ้าพังตรงนั้นจะได้แค่
+   * FUNCTION_INVOCATION_FAILED เปล่าๆ ใน log โดยไม่รู้ว่าอะไรพัง
+   * เรียก arrayBuffer() ก่อน ทำให้ error เด้งขึ้นมาให้จับและเขียน log ได้
+   */
+  async function draw(podiumStyle: PodiumStyle) {
     const image = new ImageResponse(
       (
         <StoryCard
@@ -181,22 +181,19 @@ export async function GET(request: NextRequest) {
           rows={[...active.slice(3), ...resting]}
           totalKm={summary}
           totalLabel={mode === "percent" ? "เฉลี่ยทั้งกลุ่ม" : "รวมทั้งกลุ่ม"}
+          podiumStyle={podiumStyle}
         />
       ),
       { width: STORY_WIDTH, height: STORY_HEIGHT, fonts },
     );
 
-    const png = await image.arrayBuffer();
+    return image.arrayBuffer();
+  }
 
-    return new Response(png, {
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "no-store, max-age=0",
-      },
-    });
-  } catch (error) {
-    // เขียนรายละเอียดเท่าที่ช่วยไล่ปัญหาได้ โดยไม่หลุดข้อมูลส่วนตัวของสมาชิก
-    console.error("[share/image] วาดรูปสตอรี่ไม่สำเร็จ", {
+  /** รายละเอียดเท่าที่ช่วยไล่ปัญหาได้ โดยไม่หลุดข้อมูลส่วนตัวของสมาชิก */
+  function describe(error: unknown, podiumStyle: PodiumStyle) {
+    return {
+      podiumStyle,
       mode,
       memberCount: entries.length,
       withAvatar: entries.filter((entry) => entry.avatar !== null).length,
@@ -206,11 +203,37 @@ export async function GET(request: NextRequest) {
       ),
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
-    });
+    };
+  }
 
-    return new Response("วาดรูปไม่สำเร็จ ลองใหม่อีกครั้ง", {
-      status: 500,
-      headers: { "Cache-Control": "no-store, max-age=0" },
+  function send(png: ArrayBuffer) {
+    return new Response(png, {
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "no-store, max-age=0",
+      },
     });
+  }
+
+  try {
+    return send(await draw("mug"));
+  } catch (error) {
+    // แก้วพังแล้ว ลองใหม่ด้วยโพเดียมรูปสี่เหลี่ยมแบบเดิม ซึ่งไม่แตะ svg เลย
+    // ได้รูปที่หน้าตาไม่ตรงใจดีกว่าได้ 500
+    console.error("[share/image] วาดแบบแก้วไม่สำเร็จ", describe(error, "mug"));
+
+    try {
+      return send(await draw("square"));
+    } catch (fallbackError) {
+      console.error(
+        "[share/image] วาดแบบสี่เหลี่ยมก็ไม่สำเร็จ",
+        describe(fallbackError, "square"),
+      );
+
+      return new Response("วาดรูปไม่สำเร็จ ลองใหม่อีกครั้ง", {
+        status: 500,
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      });
+    }
   }
 }

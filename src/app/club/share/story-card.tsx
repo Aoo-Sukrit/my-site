@@ -1,3 +1,18 @@
+import {
+  MUG_BADGE,
+  MUG_BADGE_FONT,
+  MUG_BODY_PATH,
+  MUG_FOAM_PATH,
+  MUG_HANDLE_PATH,
+  MUG_HANDLE_STROKE,
+  MUG_INITIAL_FONT,
+  MUG_INNER,
+  MUG_PHOTO_BOX,
+  MUG_PRINT,
+  MUG_SHADOW_OFFSET,
+  MUG_STROKE,
+  MUG_VIEW,
+} from "@/lib/beer-mug";
 import { formatKm, formatPercent } from "@/lib/date";
 
 /**
@@ -30,7 +45,141 @@ const MAX_ROWS = 7;
  * ตรึงความสูงกล่องรูปไว้เท่ากัน แล้ววางรูปชิดล่างในกล่อง
  * ชื่อกับระยะของทั้งสามช่องจึงเริ่มที่ระดับเดียวกันเสมอ
  */
-const PODIUM_PHOTO_BOX = 360;
+const MUG_WIDTH_FIRST = 360;
+const MUG_WIDTH_SIDE = 276;
+
+/** แก้วสูงเท่าไหร่เมื่อกว้างเท่านี้ อัตราส่วนล็อกตามกรอบวาดใน beer-mug.ts */
+function mugHeight(width: number) {
+  return Math.round((width * MUG_VIEW.height) / MUG_VIEW.width);
+}
+
+const PODIUM_PHOTO_BOX = mugHeight(MUG_WIDTH_FIRST);
+
+/**
+ * ชนิดรูปที่ resvg (ตัวแปลง SVG เป็น PNG ที่อยู่หลัง next/og) อ่านออก
+ *
+ * บัคเก็ต avatars ยอม webp ด้วย แต่ resvg อ่าน webp ไม่ได้ ถ้าใส่เข้าไปมันจะ
+ * วาดเป็นช่องว่างเงียบๆ ดักไว้ตรงนี้แล้วให้ตกไปใช้ตัวอักษรแรกแทน จะได้ไม่เห็น
+ * แก้วเปล่าโดยไม่รู้สาเหตุ
+ */
+function usableAvatar(avatar: string | null): string | null {
+  if (!avatar) return null;
+  return /^data:image\/(jpeg|jpg|png|gif);/i.test(avatar) ? avatar : null;
+}
+
+/**
+ * แก้วเบียร์ทั้งใบเป็นสตริง SVG
+ *
+ * ทำไมต้องประกอบเป็นสตริงแล้วส่งเป็นรูปใบเดียว แทนที่จะเขียน <svg> ใน JSX
+ * ตรงๆ เหมือนฝั่งเว็บ
+ *
+ * เพราะ satori พังทั้งรูปเมื่อมี <image> อยู่ใน <svg> ที่เขียนเป็น JSX
+ * ขึ้น TypeError: Cannot read properties of undefined (reading '0') ตอนวาด
+ * ซึ่งเกิดหลังจาก ImageResponse คืน Response ไปแล้ว บน Vercel จึงเห็นแค่
+ * FUNCTION_INVOCATION_FAILED เปล่าๆ ไม่มีข้อความ error ให้ไล่
+ * (นี่คือสาเหตุที่รูปสตอรี่พังหลัง e66fd43 ส่วน <text> ใน <svg> ก็พังแบบเดียวกัน)
+ *
+ * พอประกอบเป็นสตริงแล้วยัดเป็น data URI ให้ <img> ใบเดียว satori เห็นเป็นรูป
+ * ธรรมดาใบหนึ่ง ไม่ต้องเดินเข้าไปในต้นไม้ SVG เลย แล้ว resvg เป็นคนวาด
+ * clipPath กับ preserveAspectRatio ให้ ซึ่งมันทำได้ครบและหน้าตาเหมือนกันเป๊ะ
+ */
+function mugSvg(avatar: string | null, first: boolean): string {
+  const shadow = first ? MUG_PRINT.goldShadow : MUG_PRINT.inkShadow;
+  const box = MUG_PHOTO_BOX;
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"`,
+    ` viewBox="0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}" width="${MUG_VIEW.width}" height="${MUG_VIEW.height}">`,
+    `<defs><clipPath id="body"><path d="${MUG_BODY_PATH}"/></clipPath></defs>`,
+    `<g transform="translate(${MUG_SHADOW_OFFSET},${MUG_SHADOW_OFFSET})" fill="${shadow}" stroke="${shadow}">`,
+    `<path d="${MUG_HANDLE_PATH}" fill="none" stroke-width="${MUG_HANDLE_STROKE}"/>`,
+    `<path d="${MUG_FOAM_PATH}"/>`,
+    `<path d="${MUG_BODY_PATH}"/>`,
+    `</g>`,
+    `<path d="${MUG_HANDLE_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_HANDLE_STROKE}"/>`,
+    `<path d="${MUG_BODY_PATH}" fill="${MUG_PRINT.emptyFill}"/>`,
+    avatar
+      ? `<image xlink:href="${avatar}" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" preserveAspectRatio="xMidYMid slice" clip-path="url(#body)"/>`
+      : ``,
+    `<path d="${MUG_BODY_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
+    `<path d="${MUG_FOAM_PATH}" fill="${MUG_PRINT.foam}" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
+    `<circle cx="${MUG_BADGE.cx}" cy="${MUG_BADGE.cy}" r="${MUG_BADGE.r}" fill="${shadow}"/>`,
+    `</svg>`,
+  ].join("");
+}
+
+/**
+ * แก้วหนึ่งใบในโพเดียม
+ *
+ * ตัวแก้วเป็นรูป ส่วนตัวหนังสือสองตัว (เลขอันดับ กับตัวอักษรแรกตอนไม่มีรูป)
+ * เป็น div วางทับ เพราะ <text> ใน svg ทำให้ satori พังเหมือนกัน และวิธีนี้
+ * ยังได้ฟอนต์ไทยที่โหลดไว้ด้วย ถ้าฝังใน svg resvg จะไม่มีฟอนต์ให้ใช้
+ */
+function StoryMug({
+  entry,
+  width,
+  first,
+}: {
+  entry: StoryEntry;
+  width: number;
+  first: boolean;
+}) {
+  const avatar = usableAvatar(entry.avatar);
+  const height = mugHeight(width);
+  const scale = width / MUG_VIEW.width;
+  const badgeSize = MUG_BADGE.r * 2 * scale;
+  const uri = `data:image/svg+xml;base64,${Buffer.from(
+    mugSvg(avatar, first),
+    "utf8",
+  ).toString("base64")}`;
+
+  return (
+    <div style={{ display: "flex", position: "relative", width, height }}>
+      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+      <img src={uri} width={width} height={height} style={{ width, height }} />
+
+      {avatar ? null : (
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            left: MUG_INNER.x * scale,
+            top: MUG_INNER.y * scale,
+            width: MUG_INNER.width * scale,
+            height: MUG_INNER.height * scale,
+            alignItems: "center",
+            justifyContent: "center",
+            color: MUG_PRINT.emptyText,
+            fontFamily: "PlexThai",
+            fontWeight: 600,
+            fontSize: Math.round(MUG_INITIAL_FONT * scale),
+          }}
+        >
+          {entry.nickname.slice(0, 1).toUpperCase()}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          position: "absolute",
+          left: (MUG_BADGE.cx - MUG_BADGE.r) * scale,
+          top: (MUG_BADGE.cy - MUG_BADGE.r) * scale,
+          width: badgeSize,
+          height: badgeSize,
+          alignItems: "center",
+          justifyContent: "center",
+          color: MUG_PRINT.badgeText,
+          fontFamily: "PlexThai",
+          fontWeight: 600,
+          fontSize: Math.round(MUG_BADGE_FONT * scale),
+        }}
+      >
+        {entry.rankNo}
+      </div>
+    </div>
+  );
+}
 
 /**
  * ตัดข้อความให้สั้นพอที่จะไม่ล้นกรอบ
@@ -62,6 +211,16 @@ export type StoryEntry = {
   /** โหมด % เท่านั้น เป้าจริงหลังรวมโหวต */
   finalKm: string | null;
 };
+
+/**
+ * โพเดียมวาดแบบไหน
+ *   mug    แก้วเบียร์ ใช้เป็นค่าปกติ
+ *   square รูปสี่เหลี่ยมมุมมนแบบก่อนหน้านี้ เก็บไว้เป็นทางหนีทีไล่
+ *
+ * ถ้าวาดแบบแก้วแล้วพัง ฝั่ง route จะลองวาดใหม่ด้วยแบบ square ให้อัตโนมัติ
+ * ดีกว่าปล่อยให้คนกดแล้วได้ 500 เปล่าๆ
+ */
+export type PodiumStyle = "mug" | "square";
 
 /** สองกระดานใช้ดีไซน์เดียวกันทุกอย่าง ต่างแค่ตัวเลขที่เอามาแสดง */
 export type StoryMode = "distance" | "percent";
@@ -134,17 +293,72 @@ function Photo({
   );
 }
 
+/** โพเดียมแบบเดิม รูปสี่เหลี่ยมมุมมนกับป้ายอันดับห้อยใต้รูป */
+function SquarePodiumPhoto({
+  entry,
+  width,
+  first,
+}: {
+  entry: StoryEntry;
+  width: number;
+  first: boolean;
+}) {
+  const height = first ? 360 : 280;
+
+  return (
+    <div style={{ display: "flex", position: "relative" }}>
+      <Photo
+        avatar={usableAvatar(entry.avatar)}
+        nickname={entry.nickname}
+        width={width}
+        height={height}
+        radius={28}
+        fontSize={first ? 120 : 96}
+      />
+      <div
+        style={{
+          display: "flex",
+          position: "absolute",
+          bottom: -26,
+          left: width / 2 - 26,
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: first ? ACCENT : CREAM,
+          border: `3px solid ${ACCENT}`,
+          color: first ? CREAM : ACCENT,
+          fontFamily: "PlexThai",
+          fontWeight: 600,
+          fontSize: 28,
+        }}
+      >
+        {entry.rankNo}
+      </div>
+    </div>
+  );
+}
+
 function PodiumSlot({
   entry,
   first,
   mode,
+  podiumStyle,
 }: {
   entry: StoryEntry;
   first: boolean;
   mode: StoryMode;
+  podiumStyle: PodiumStyle;
 }) {
-  const width = first ? 270 : 210;
-  const height = first ? 360 : 280;
+  const width =
+    podiumStyle === "square"
+      ? first
+        ? 270
+        : 210
+      : first
+        ? MUG_WIDTH_FIRST
+        : MUG_WIDTH_SIDE;
   const caption = truncate(entry.caption, first ? 28 : 22);
   const small = smallLine(entry, mode);
 
@@ -164,37 +378,11 @@ function PodiumSlot({
           alignItems: "flex-end",
         }}
       >
-        <div style={{ display: "flex", position: "relative" }}>
-          <Photo
-            avatar={entry.avatar}
-            nickname={entry.nickname}
-            width={width}
-            height={height}
-            radius={28}
-            fontSize={first ? 120 : 96}
-          />
-          <div
-            style={{
-              display: "flex",
-              position: "absolute",
-              bottom: -26,
-              left: width / 2 - 26,
-              width: 52,
-              height: 52,
-              borderRadius: 26,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: first ? ACCENT : CREAM,
-              border: `3px solid ${ACCENT}`,
-              color: first ? CREAM : ACCENT,
-              fontFamily: "PlexThai",
-              fontWeight: 600,
-              fontSize: 28,
-            }}
-          >
-            {entry.rankNo}
-          </div>
-        </div>
+        {podiumStyle === "square" ? (
+          <SquarePodiumPhoto entry={entry} width={width} first={first} />
+        ) : (
+          <StoryMug entry={entry} width={width} first={first} />
+        )}
       </div>
 
       {/* กันที่ให้ชื่อสองบรรทัดเสมอ ชื่อยาวอย่าง "angkuji run slow" จะได้ไม่
@@ -204,8 +392,11 @@ function PodiumSlot({
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "center",
-          marginTop: 38,
-          height: Math.round((first ? 34 : 28) * 1.22 * 2),
+          // แบบ square มีป้ายอันดับห้อยใต้รูป 26px ต้องเว้นที่ให้
+          marginTop: podiumStyle === "square" ? 38 : 14,
+          // ตรึงความสูงด้วยฟอนต์ตัวใหญ่สุดเสมอ ไม่ใช่ตามขนาดของช่องตัวเอง
+          // ไม่งั้นช่องอันดับ 1 จะดันบรรทัดตัวเลขลงไปต่ำกว่าอีกสองช่อง
+          height: Math.round(34 * 1.22 * 2),
           width,
           overflow: "hidden",
           textAlign: "center",
@@ -301,7 +492,7 @@ function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
 
       <div style={{ display: "flex", marginLeft: 8, marginRight: 20 }}>
         <Photo
-          avatar={entry.avatar}
+          avatar={usableAvatar(entry.avatar)}
           nickname={entry.nickname}
           width={54}
           height={72}
@@ -365,6 +556,7 @@ export function StoryCard({
   totalKm,
   mode = "distance",
   totalLabel = "รวมทั้งกลุ่ม",
+  podiumStyle = "mug",
 }: {
   logo: string;
   periodLabel: string;
@@ -374,6 +566,7 @@ export function StoryCard({
   totalKm: number;
   mode?: StoryMode;
   totalLabel?: string;
+  podiumStyle?: PodiumStyle;
 }) {
   const shown = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS - 1) : rows;
   const hidden = rows.length - shown.length;
@@ -471,8 +664,8 @@ export function StoryCard({
             flexDirection: "row",
             alignItems: "flex-start",
             justifyContent: "center",
-            marginTop: 44,
-            gap: 24,
+            marginTop: 30,
+            gap: 20,
           }}
         >
           {arranged.map((slot) => (
@@ -481,6 +674,7 @@ export function StoryCard({
               entry={slot.entry}
               first={slot.first}
               mode={mode}
+              podiumStyle={podiumStyle}
             />
           ))}
         </div>
