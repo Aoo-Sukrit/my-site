@@ -63,17 +63,33 @@ function VoterChip({ vote }: { vote: VoteBreakdownRow }) {
   );
 }
 
-export default async function RewardsTab({ round }: { round: Round }) {
+export default async function RewardsTab({
+  round,
+  monthKey,
+  readOnly = false,
+}: {
+  round: Round;
+  /** ไม่ใส่ = เดือนปัจจุบัน */
+  monthKey?: string;
+  /** เดือนที่ผ่านไปแล้ว ซ่อนปุ่มที่เขียนข้อมูลทั้งหมด */
+  readOnly?: boolean;
+}) {
   return (
     <div className="space-y-10">
-      <PrizeBoard round={round} />
-      <ChallengeBoard round={round} />
-      <VoteBreakdown round={round} />
+      <PrizeBoard round={round} monthKey={monthKey} readOnly={readOnly} />
+      <ChallengeBoard round={round} monthKey={monthKey} readOnly={readOnly} />
+      <VoteBreakdown round={round} monthKey={monthKey} />
     </div>
   );
 }
 
-async function VoteBreakdown({ round }: { round: Round }) {
+async function VoteBreakdown({
+  round,
+  monthKey,
+}: {
+  round: Round;
+  monthKey?: string;
+}) {
   const phase = roundPhase(round.target_opens_at, round.target_locks_at);
 
   // ก่อนเวลาเปิดผลไม่ต้องยิง RPC เลย และถึงยิงไปฐานข้อมูลก็คืน 0 แถวอยู่ดี
@@ -89,8 +105,8 @@ async function VoteBreakdown({ round }: { round: Round }) {
   }
 
   const [targets, breakdown] = await Promise.all([
-    getRoundTargets(),
-    getVoteBreakdown(),
+    getRoundTargets(monthKey),
+    getVoteBreakdown(monthKey),
   ]);
 
   if (targets.length === 0) {

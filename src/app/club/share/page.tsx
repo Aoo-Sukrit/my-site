@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { requireApproved } from "@/lib/auth";
 import { thaiDateTimeLong } from "@/lib/date";
-import { getCurrentRound } from "@/lib/runs";
+import { getCurrentRound, getRoundByMonth, getRoundMonths } from "@/lib/runs";
+import { thaiMonthLabel } from "@/lib/date";
 import { roundPhase } from "@/lib/target-rules";
 
 export const metadata: Metadata = {
@@ -39,16 +40,39 @@ export default async function SharePage(props: PageProps<"/club/share">) {
   const params = await props.searchParams;
 
   const showPercent = params.board === "percent";
-  const round = await getCurrentRound();
+
+  // รับ month มาด้วย จะได้เซฟรูปสรุปของเดือนที่แล้วได้
+  // ใส่เดือนมั่วๆ ให้กลับมาเดือนปัจจุบันเงียบๆ เหมือนหน้ากระดาน
+  const months = await getRoundMonths();
+  const currentMonthKey = months.find((row) => row.is_current)?.month.slice(0, 7);
+  const asked = typeof params.month === "string" ? params.month : null;
+  const selectedMonth =
+    asked && asked !== currentMonthKey &&
+    months.some((row) => row.month.slice(0, 7) === asked)
+      ? asked
+      : null;
+
+  const round = selectedMonth
+    ? await getRoundByMonth(selectedMonth)
+    : await getCurrentRound();
   const phase = round
     ? roundPhase(round.target_opens_at, round.target_locks_at)
     : "before";
 
+  /** ลิงก์ที่พาเดือนที่เลือกไปด้วย */
+  const withMonth = (base: string, extra?: string) => {
+    const parts = [extra, selectedMonth ? `month=${selectedMonth}` : null].filter(
+      Boolean,
+    );
+    return parts.length > 0 ? `${base}?${parts.join("&")}` : base;
+  };
+
   // รูป % ต้องรอถึงเวลาเปิดผลก่อน route ของรูปก็ปฏิเสธเองอีกชั้น
   const percentReady = showPercent && phase === "revealed";
-  const imageUrl = showPercent
-    ? "/club/share/image?board=percent"
-    : "/club/share/image";
+  const imageUrl = withMonth(
+    "/club/share/image",
+    showPercent ? "board=percent" : undefined,
+  );
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
@@ -57,14 +81,20 @@ export default async function SharePage(props: PageProps<"/club/share">) {
         <h1 className="font-display text-2xl font-semibold tracking-tight">
           รูปลงสตอรี่
         </h1>
+        {round ? (
+          <p className="text-sm text-muted">เดือน{thaiMonthLabel(round.month)}</p>
+        ) : null}
       </section>
 
       {/* สวิตช์หน้าตาเดียวกับบนกระดาน สลับด้วย query string ไม่ต้องใช้ JS */}
       <nav className="flex gap-1 rounded-full border border-border p-1">
-        <ShareTab href="/club/share" active={!showPercent}>
+        <ShareTab href={withMonth("/club/share")} active={!showPercent}>
           ระยะรวม
         </ShareTab>
-        <ShareTab href="/club/share?board=percent" active={showPercent}>
+        <ShareTab
+          href={withMonth("/club/share", "board=percent")}
+          active={showPercent}
+        >
           % ของเป้า
         </ShareTab>
       </nav>
@@ -111,7 +141,7 @@ export default async function SharePage(props: PageProps<"/club/share">) {
 
       <div className="flex flex-wrap justify-center gap-3">
         <Link
-          href="/club"
+          href={selectedMonth ? `/club?month=${selectedMonth}` : "/club"}
           className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
         >
           ← กลับกระดาน

@@ -6,6 +6,7 @@ import Alert from "@/components/club/alert";
 import { requireApproved } from "@/lib/auth";
 import { bangkokToday, thaiMonthLabel } from "@/lib/date";
 import { hoursLeftToEdit, signProofUrls, withinEditWindow } from "@/lib/runs";
+import { monthKeyOf } from "@/lib/run-rules";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Round, Run } from "@/lib/supabase/types";
 
@@ -33,12 +34,8 @@ export default async function EditRunPage(
   const isOwner = run.profile_id === viewer.userId;
   const isAdmin = viewer.profile.is_admin;
 
-  // ด่านจริงอยู่ที่ trigger ในฐานข้อมูล ตรงนี้แค่กันไม่ให้เปิดหน้าที่กดแล้ว
-  // ยังไงก็ไม่ผ่าน จะได้ไม่เสียเวลากรอก
-  if (!isAdmin && (!isOwner || !withinEditWindow(run))) {
-    redirect(`/club/member/${run.profile_id}`);
-  }
-
+  // ต้องรู้รอบก่อน เพราะหน้าต่างแก้ไขนับถึงเวลาที่มาก่อน ระหว่าง 24 ชั่วโมง
+  // กับเวลาตัดสินของรอบนั้น ซึ่งเป็นค่าในตาราง ไม่ใช่กติกาตายตัว
   const { data: round } = await supabase
     .from("rounds")
     .select("*")
@@ -46,6 +43,12 @@ export default async function EditRunPage(
     .maybeSingle<Round>();
 
   if (!round) notFound();
+
+  // ด่านจริงอยู่ที่ trigger ในฐานข้อมูล ตรงนี้แค่กันไม่ให้เปิดหน้าที่กดแล้ว
+  // ยังไงก็ไม่ผ่าน จะได้ไม่เสียเวลากรอก
+  if (!isAdmin && (!isOwner || !withinEditWindow(run, round.results_at))) {
+    redirect(`/club/member/${run.profile_id}`);
+  }
 
   const signed = await signProofUrls([run.proof_url]);
 
@@ -59,7 +62,7 @@ export default async function EditRunPage(
         <p className="text-sm text-muted">
           รอบเดือน{thaiMonthLabel(round.month)} ·{" "}
           {isOwner
-            ? `แก้ได้อีก ${hoursLeftToEdit(run)} ชั่วโมง`
+            ? `แก้ได้อีก ${hoursLeftToEdit(run, round.results_at)} ชั่วโมง`
             : "กำลังแก้ในฐานะแอดมิน"}{" "}
           · การแก้ทุกครั้งจะขึ้นในประวัติให้ทุกคนเห็น
         </p>
@@ -76,6 +79,7 @@ export default async function EditRunPage(
         runId={run.id}
         memberId={run.profile_id}
         today={bangkokToday()}
+        resultsAt={{ [monthKeyOf(round.month)]: round.results_at }}
         lockedMonth={round.month}
         existingProofUrl={signed.get(run.proof_url) ?? null}
         defaults={{

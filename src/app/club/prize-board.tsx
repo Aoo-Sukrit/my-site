@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import Avatar from "@/components/club/avatar";
 import ConfirmSubmit from "@/components/club/confirm-submit";
-import { bangkokDayOfMonth, thaiDateTime } from "@/lib/date";
+import { thaiDateTime, thaiDateTimeLong } from "@/lib/date";
 import {
   findHolders,
   holderPhase,
@@ -70,12 +70,12 @@ function PrizeImage({
 function HolderLine({
   holders,
   phase,
-  settleDay,
+  settleLabel,
   pendingNote,
 }: {
   holders: HolderRow[];
   phase: HolderPhase;
-  settleDay: number | null;
+  settleLabel: string | null;
   pendingNote: string | null;
 }) {
   // ช่วงรอผลวิ่งย้อนหลัง ยังบอกว่าใครนำอยู่ แต่บอกด้วยว่ายังไม่จบ
@@ -83,7 +83,7 @@ function HolderLine({
     phase === "final"
       ? "ได้ไปแล้ว"
       : phase === "waiting"
-        ? `รอผลวิ่งย้อนหลัง ตัดสินวันที่ ${settleDay ?? "-"}`
+        ? `รอผลวิ่งย้อนหลัง ตัดสิน ${settleLabel ?? "เร็วๆ นี้"}`
         : "ตอนนี้เป็นของ";
 
   if (pendingNote) {
@@ -133,19 +133,22 @@ function PrizeCard({
   imageUrl,
   holders,
   phase,
-  settleDay,
+  settleLabel,
   pendingNote,
+  readOnly,
 }: {
   prize: PrizeRow;
   imageUrl: string | null;
   holders: HolderRow[];
   phase: HolderPhase;
-  settleDay: number | null;
+  settleLabel: string | null;
   pendingNote: string | null;
+  readOnly: boolean;
 }) {
   const secretToOthers = prize.is_secret;
   const hiddenFromMe = secretToOthers && !prize.is_mine;
-  const canEdit = prize.is_mine && withinPrizeEditWindow(prize.created_at);
+  const canEdit =
+    !readOnly && prize.is_mine && withinPrizeEditWindow(prize.created_at);
 
   return (
     <li className="overflow-hidden rounded-2xl border border-border bg-surface">
@@ -190,7 +193,7 @@ function PrizeCard({
         </div>
       </div>
 
-      {prize.is_mine ? (
+      {prize.is_mine && !readOnly ? (
         <div className="flex flex-wrap gap-2 px-4 pb-4">
           {secretToOthers ? (
             <form action={revealPrizeAction}>
@@ -233,22 +236,30 @@ function PrizeCard({
       <HolderLine
         holders={holders}
         phase={phase}
-        settleDay={settleDay}
+        settleLabel={settleLabel}
         pendingNote={pendingNote}
       />
     </li>
   );
 }
 
-export default async function PrizeBoard({ round }: { round: Round }) {
+export default async function PrizeBoard({
+  round,
+  monthKey,
+  readOnly = false,
+}: {
+  round: Round;
+  monthKey?: string;
+  readOnly?: boolean;
+}) {
   const targetPhase = roundPhase(round.target_opens_at, round.target_locks_at);
 
   const [prizes, distanceRows, percentRows, deadlines] = await Promise.all([
-    getRoundPrizes(),
-    getLeaderboard(),
+    getRoundPrizes(monthKey),
+    getLeaderboard(monthKey),
     // ก่อนเปิดผลเป้า ฝั่งฐานข้อมูลคืน 0 แถวอยู่แล้ว ไม่ต้องเรียกให้เปลือง
-    targetPhase === "revealed" ? getPercentBoard() : Promise.resolve([]),
-    getRoundDeadlines(),
+    targetPhase === "revealed" ? getPercentBoard(monthKey) : Promise.resolve([]),
+    getRoundDeadlines(monthKey),
   ]);
 
   // ของจะเป็นของใครแน่ ต้องรอพ้นช่วงกรอกผลวิ่งย้อนหลังก่อน
@@ -256,7 +267,9 @@ export default async function PrizeBoard({ round }: { round: Round }) {
   const phase = deadlines
     ? holderPhase(deadlines.month_end, deadlines.settle_at)
     : "live";
-  const settleDay = deadlines ? bangkokDayOfMonth(deadlines.settle_at) : null;
+  const settleLabel = deadlines
+    ? thaiDateTimeLong(deadlines.settle_at)
+    : null;
 
   const signed = await signPrizeImages(
     prizes
@@ -288,9 +301,11 @@ export default async function PrizeBoard({ round }: { round: Round }) {
             เดือนนี้ยังไม่มีใครตั้งรางวัล
           </p>
           <p className="text-sm text-muted">เป็นคนแรกเลย</p>
-          <Link href="/club/prizes/new" className={ADD_BUTTON}>
-            + ตั้งรางวัล
-          </Link>
+          {readOnly ? null : (
+            <Link href="/club/prizes/new" className={ADD_BUTTON}>
+              + ตั้งรางวัล
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -314,16 +329,19 @@ export default async function PrizeBoard({ round }: { round: Round }) {
                   }
                   holders={holders}
                   phase={phase}
-                  settleDay={settleDay}
+                  settleLabel={settleLabel}
                   pendingNote={isDistance ? null : percentPending}
+                  readOnly={readOnly}
                 />
               );
             })}
           </ul>
 
-          <Link href="/club/prizes/new" className={ADD_BUTTON}>
-            + ตั้งรางวัล
-          </Link>
+          {readOnly ? null : (
+            <Link href="/club/prizes/new" className={ADD_BUTTON}>
+              + ตั้งรางวัล
+            </Link>
+          )}
         </>
       )}
     </section>

@@ -4,7 +4,12 @@ import type { NextRequest } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { thaiMonthLabel } from "@/lib/date";
 import { monthRange } from "@/lib/run-rules";
-import { getCurrentRound, getLeaderboard, signAvatarUrls } from "@/lib/runs";
+import {
+  getCurrentRound,
+  getLeaderboard,
+  getRoundByMonth,
+  signAvatarUrls,
+} from "@/lib/runs";
 import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
@@ -60,7 +65,14 @@ export async function GET(request: NextRequest) {
       ? "percent"
       : "distance";
 
-  const round = await getCurrentRound();
+  // รับ month มาด้วย เดือนที่ไม่มีรอบให้ตกกลับไปเดือนปัจจุบันเงียบๆ
+  const askedMonth = request.nextUrl.searchParams.get("month");
+  const monthKey = /^\d{4}-\d{2}$/.test(askedMonth ?? "") ? askedMonth : null;
+
+  const round = monthKey
+    ? ((await getRoundByMonth(monthKey)) ?? (await getCurrentRound()))
+    : await getCurrentRound();
+  const monthArg = round ? round.month.slice(0, 7) : undefined;
 
   // ด่านที่สองของการปิดตา ฝั่งฐานข้อมูลคืน 0 แถวอยู่แล้วก่อนถึงเวลาเปิดผล
   // แต่ปฏิเสธตั้งแต่ตรงนี้ด้วย จะได้ไม่มีทางหลุดข้อมูลเป้าออกไปก่อนเวลา
@@ -80,7 +92,7 @@ export async function GET(request: NextRequest) {
   let sourceRows: SourceRow[];
 
   if (mode === "distance") {
-    const board = await getLeaderboard();
+    const board = await getLeaderboard(monthArg);
     const ranked = board.filter((row) => Number(row.total_km) > 0);
     const resting = board.filter((row) => Number(row.total_km) <= 0);
 
@@ -98,7 +110,7 @@ export async function GET(request: NextRequest) {
     }));
   } else {
     // month_percent_board() เรียงมาให้แล้ว มากไปน้อย คนไม่มีเป้าอยู่ท้าย
-    const rows = await getPercentBoard();
+    const rows = await getPercentBoard(monthArg);
 
     sourceRows = rows.map((row) => ({
       member_id: row.member_id,

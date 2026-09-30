@@ -44,6 +44,8 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
   if (!member) notFound();
 
   const round = await getCurrentRound();
+  // ผลวิ่งในหน้านี้เป็นของรอบเดือนปัจจุบันทั้งหมด จึงใช้เวลาตัดสินตัวเดียวกันได้
+  const roundResultsAt = round?.results_at ?? null;
   const [board, runs, edits] = await Promise.all([
     getLeaderboard(),
     round ? getMemberRuns(id, round.id) : Promise.resolve([]),
@@ -138,9 +140,13 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
                 run={run}
                 proofUrl={signed.get(run.proof_url) ?? null}
                 dateLabel={thaiShortDate(run.ran_on)}
-                canManage={canManage && (viewer.profile.is_admin || withinEditWindow(run))}
-                withinWindow={withinEditWindow(run)}
-                hoursLeft={hoursLeftToEdit(run)}
+                canManage={
+                  canManage &&
+                  (viewer.profile.is_admin ||
+                    withinEditWindow(run, roundResultsAt))
+                }
+                withinWindow={withinEditWindow(run, roundResultsAt)}
+                hoursLeft={hoursLeftToEdit(run, roundResultsAt)}
                 viewerIsAdmin={viewer.profile.is_admin}
               />
             ))}

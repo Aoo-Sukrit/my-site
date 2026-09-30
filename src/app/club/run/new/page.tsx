@@ -3,9 +3,14 @@ import Link from "next/link";
 
 import Alert from "@/components/club/alert";
 import { requireApproved } from "@/lib/auth";
-import { bangkokToday, thaiMonthLabel } from "@/lib/date";
-import { BACKDATE_GRACE_DAYS } from "@/lib/run-rules";
-import { getCurrentRound } from "@/lib/runs";
+import {
+  bangkokToday,
+  hasPassed,
+  thaiDateTimeLong,
+  thaiMonthLabel,
+} from "@/lib/date";
+import { monthKeyOf, previousMonthKey, type ResultsAtByMonth } from "@/lib/run-rules";
+import { getCurrentRound, getRoundByMonth } from "@/lib/runs";
 
 import RunForm from "../run-form";
 
@@ -17,7 +22,16 @@ export default async function NewRunPage() {
   const viewer = await requireApproved();
   const round = await getCurrentRound();
   const today = bangkokToday();
-  const inGracePeriod = Number(today.slice(8, 10)) <= BACKDATE_GRACE_DAYS;
+
+  // เดือนที่แล้วยังกรอกได้อยู่ไหม ขึ้นกับ results_at ของรอบนั้น ซึ่งแอดมินเลื่อนได้
+  // จึงต้องไปถามฐานข้อมูล ไม่ใช่เดาจากวันที่วันนี้
+  const lastMonthKey = previousMonthKey(monthKeyOf(today));
+  const lastRound = await getRoundByMonth(lastMonthKey);
+  const lastStillOpen = lastRound !== null && !hasPassed(lastRound.results_at);
+
+  const resultsAt: ResultsAtByMonth = {};
+  if (round) resultsAt[monthKeyOf(round.month)] = round.results_at;
+  if (lastRound) resultsAt[lastMonthKey] = lastRound.results_at;
 
   return (
     <div className="mx-auto max-w-md space-y-8">
@@ -39,11 +53,11 @@ export default async function NewRunPage() {
         </Alert>
       ) : (
         <>
-          {inGracePeriod ? (
+          {lastStillOpen && lastRound ? (
             <Alert tone="info">
-              ช่วง {BACKDATE_GRACE_DAYS} วันแรกของเดือน
-              ยังกรอกผลวิ่งของเดือนที่แล้วได้อยู่ เลือกวันที่ให้ตรงกับวันที่วิ่งจริง
-              แล้วระบบจะเอาไปนับในรอบของเดือนนั้นให้เอง
+              ผลของเดือน{thaiMonthLabel(lastRound.month)}กรอกได้ถึง{" "}
+              {thaiDateTimeLong(lastRound.results_at)}{" "}
+              เลือกวันที่ให้ตรงกับวันที่วิ่งจริง แล้วระบบจะเอาไปนับในรอบของเดือนนั้นให้เอง
             </Alert>
           ) : null}
 
@@ -51,6 +65,7 @@ export default async function NewRunPage() {
             mode="new"
             memberId={viewer.userId}
             today={today}
+            resultsAt={resultsAt}
             defaults={{
               ranOn: today,
               distanceKm: "",

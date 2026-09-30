@@ -39,22 +39,34 @@ export async function getMyVotes(): Promise<MyVote[]> {
 }
 
 /** ก่อนถึงเวลาเปิดผล ฝั่งฐานข้อมูลคืน 0 แถวเสมอ ไม่ว่าใครเรียก */
-export async function getRoundTargets(): Promise<RoundTargetRow[]> {
+export async function getRoundTargets(
+  monthKey?: string,
+): Promise<RoundTargetRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_targets");
+  const { data } = await supabase.rpc("round_targets", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as RoundTargetRow[];
 }
 
 /** ก่อนถึงเวลาเปิดผล ฝั่งฐานข้อมูลคืน 0 แถวเสมอ ไม่ว่าใครเรียก */
-export async function getPercentBoard(): Promise<PercentRow[]> {
+export async function getPercentBoard(
+  monthKey?: string,
+): Promise<PercentRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("month_percent_board");
+  const { data } = await supabase.rpc("month_percent_board", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as PercentRow[];
 }
 
 /** ก่อนถึงเวลาเปิดผล ฝั่งฐานข้อมูลคืน 0 แถวเสมอ เหมือน round_targets() */
-export async function getVoteBreakdown(): Promise<VoteBreakdownRow[]> {
+export async function getVoteBreakdown(
+  monthKey?: string,
+): Promise<VoteBreakdownRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_vote_breakdown");
+  const { data } = await supabase.rpc("round_vote_breakdown", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as VoteBreakdownRow[];
 }

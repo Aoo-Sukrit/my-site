@@ -20,22 +20,34 @@ import type {
  * นี่คือทางเดียวที่หน้าเว็บรู้ว่า "ปิดรับวันไหน" กับ "ตัดสินวันไหน"
  * เลข 20 กับเลข 4 อยู่ในฐานข้อมูลที่เดียว หน้าเว็บไม่ได้ก๊อปมาเขียนซ้ำ
  */
-export async function getRoundDeadlines(): Promise<RoundDeadlines | null> {
+export async function getRoundDeadlines(
+  monthKey?: string,
+): Promise<RoundDeadlines | null> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_deadlines");
+  const { data } = await supabase.rpc("round_deadlines", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   const rows = (data ?? []) as RoundDeadlines[];
   return rows[0] ?? null;
 }
 
-export async function getRoundChallenges(): Promise<ChallengeRow[]> {
+export async function getRoundChallenges(
+  monthKey?: string,
+): Promise<ChallengeRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_challenges");
+  const { data } = await supabase.rpc("round_challenges", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as ChallengeRow[];
 }
 
-export async function getRoundChallengeStakes(): Promise<ChallengeStakeRow[]> {
+export async function getRoundChallengeStakes(
+  monthKey?: string,
+): Promise<ChallengeStakeRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_challenge_stakes");
+  const { data } = await supabase.rpc("round_challenge_stakes", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as ChallengeStakeRow[];
 }
 

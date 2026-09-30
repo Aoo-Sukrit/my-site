@@ -131,7 +131,7 @@ export function monthHasEnded(monthStart: string): boolean {
   return Date.now() >= bangkokMonthEnd(monthStart).getTime();
 }
 
-/** เลขวันที่ของเดือนตามเวลาไทย ใช้บอกว่า "ตัดสินวันที่ 4" โดยไม่ต้องฝังเลขไว้ */
+/** เลขวันที่ของเดือนตามเวลาไทย */
 export function bangkokDayOfMonth(iso: string): number {
   return Number(
     new Intl.DateTimeFormat("en-CA", {
@@ -149,4 +149,14 @@ export function daysLeftUntil(iso: string, from: number = Date.now()): number {
   const left = new Date(iso).getTime() - from;
   if (left <= 0) return 0;
   return Math.ceil(left / 86_400_000);
+}
+
+/**
+ * เวลานั้นผ่านไปแล้วหรือยัง
+ *
+ * ห่อ Date.now() ไว้ในฟังก์ชันเพราะเรียกตรงๆ ในตัว component จะผิดกฎ
+ * ความบริสุทธิ์ของ React (react-hooks/purity) ซึ่งเจอมาแล้วหลายรอบ
+ */
+export function hasPassed(iso: string, now: number = Date.now()): boolean {
+  return now >= new Date(iso).getTime();
 }

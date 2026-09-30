@@ -10,9 +10,13 @@ export const PRIZE_BUCKET = "prizes";
  * ไปหมดแล้ว ของที่ยังปิดอุบอยู่จะได้ title / detail / image_path เป็น null
  * กลับมาเอง เว้นแต่คนเรียกเป็นคนให้
  */
-export async function getRoundPrizes(): Promise<PrizeRow[]> {
+export async function getRoundPrizes(
+  monthKey?: string,
+): Promise<PrizeRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("round_prizes");
+  const { data } = await supabase.rpc("round_prizes", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as PrizeRow[];
 }
 

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { fromBangkokInputValue, thaiMonthLabel } from "@/lib/date";
-import { getCurrentRound } from "@/lib/runs";
+import { getCurrentRound, getRoundByMonth } from "@/lib/runs";
 import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/club-limits";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -182,4 +182,45 @@ export async function clearRoundTargetsAction(formData: FormData) {
   revalidatePath("/club/target");
   revalidatePath("/club/admin");
   backTo("ล้างเป้าและโหวตทั้งรอบแล้ว ผลวิ่งไม่ถูกแตะ", false);
+}
+
+/**
+ * เลื่อนเวลาตัดสินผลของรอบหนึ่ง
+ *
+ * rounds.results_at คุมสี่อย่างพร้อมกัน การกรอกผลย้อนหลัง การแก้ผลวิ่ง
+ * การพลิกรางวัลเป็น "ได้ไปแล้ว" และการตัดสินคำท้า
+ * เลื่อนหลังจากตัดสินไปแล้วจึงทำให้ผลรางวัลกับคำท้ากลับมาเปลี่ยนได้อีก
+ * ซึ่งตั้งใจให้เป็นแบบนั้น เผื่อมีคนกรอกผลไม่ทันจริงๆ
+ *
+ * ตัวบังคับว่าต้องอยู่หลังสิ้นเดือนอยู่ที่ trigger rounds_guard ในฐานข้อมูล
+ */
+export async function setResultsAtAction(formData: FormData) {
+  await requireAdmin();
+
+  const monthKey = String(formData.get("month") ?? "");
+  const resultsAt = fromBangkokInputValue(
+    String(formData.get("results_at") ?? ""),
+  );
+
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) backTo("ไม่รู้ว่าจะแก้รอบเดือนไหน", true);
+  if (!resultsAt) backTo("รูปแบบวันเวลาไม่ถูกต้อง", true);
+
+  const round = await getRoundByMonth(monthKey);
+  if (!round) backTo("ไม่เจอรอบของเดือนนั้น", true);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("rounds")
+    .update({ results_at: resultsAt })
+    .eq("id", round.id);
+
+  if (error) backTo(toThaiDbError(error), true);
+
+  revalidatePath("/club");
+  revalidatePath("/club/admin");
+  revalidatePath("/club/run/new");
+  backTo(
+    `ตั้งเวลาตัดสินผลของเดือน${thaiMonthLabel(round.month)}แล้ว`,
+    false,
+  );
 }

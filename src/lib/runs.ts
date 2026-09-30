@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "./supabase/server";
 import type {
   LeaderboardRow,
   Round,
+  RoundMonth,
   Run,
   RunEdit,
 } from "./supabase/types";
@@ -24,6 +25,38 @@ export async function getCurrentRound(): Promise<Round | null> {
 }
 
 /**
+ * รอบของเดือนที่ระบุ แบบอ่านอย่างเดียว
+ * ต่างจาก getRoundForDate() ตรงที่ไม่สร้างรอบใหม่ให้ถ้ายังไม่มี
+ */
+export async function getRoundByMonth(
+  monthKey: string,
+): Promise<Round | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("round_by_month", {
+    target_month: `${monthKey}-01`,
+  });
+  return (data as Round | null) ?? null;
+}
+
+/** เดือนที่เลือกดูได้ ใหม่ไปเก่า ไม่เลยเดือนปัจจุบัน */
+export async function getRoundMonths(): Promise<RoundMonth[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("round_months");
+  return (data ?? []) as RoundMonth[];
+}
+
+/** รอบที่ผลวิ่งรายการหนึ่งสังกัดอยู่ ใช้ดูเวลาตัดสินตอนจะแก้ */
+export async function getRoundById(roundId: string): Promise<Round | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("rounds")
+    .select("*")
+    .eq("id", roundId)
+    .maybeSingle<Round>();
+  return data ?? null;
+}
+
+/**
  * รอบของเดือนที่วันนั้นอยู่ สร้างให้ถ้ายังไม่มี
  *
  * ใช้ตอนกรอกผลวิ่ง เพราะผลวิ่งต้องไปเข้ารอบของเดือนที่วิ่งจริง ไม่ใช่รอบ
@@ -35,9 +68,13 @@ export async function getRoundForDate(isoDate: string): Promise<Round | null> {
   return (data as Round | null) ?? null;
 }
 
-export async function getLeaderboard(): Promise<LeaderboardRow[]> {
+export async function getLeaderboard(
+  monthKey?: string,
+): Promise<LeaderboardRow[]> {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("month_leaderboard");
+  const { data } = await supabase.rpc("month_leaderboard", {
+    target_month: monthKey ? `${monthKey}-01` : null,
+  });
   return (data ?? []) as LeaderboardRow[];
 }
 
@@ -122,14 +159,28 @@ async function signStorageUrls(
  * ใช้ตัดสินแค่ว่าจะโชว์ปุ่มแก้กับลบหรือเปล่า ตัวบังคับจริงคือ trigger
  * runs_enforce_edit_window ในฐานข้อมูล ตรงนี้พังก็ไม่ได้ทำให้กติกาหลุด
  */
-export function withinEditWindow(run: Run): boolean {
-  const created = new Date(run.created_at).getTime();
-  return Date.now() - created < EDIT_WINDOW_HOURS * 60 * 60 * 1000;
+/**
+ * ยังแก้หรือลบผลวิ่งรายการนี้เองได้ไหม
+ *
+ * ใช้เวลาที่มาถึงก่อน ระหว่าง 24 ชั่วโมงหลังกรอก กับเวลาตัดสินของรอบนั้น
+ * เดิมใช้ 24 ชั่วโมงอย่างเดียว ซึ่งมีช่องโหว่ คนกรอกสามทุ่มวันที่ 31
+ * ยังแก้ได้ถึงสามทุ่มวันที่ 1 คือหลังเวลาตัดสินไปแล้วเก้าชั่วโมง
+ *
+ * ตัวบังคับจริงคือ trigger runs_enforce_edit_window ในฐานข้อมูล
+ * แอดมินไม่ติดกติกานี้ ทั้งสองฝั่ง
+ */
+export function editDeadline(run: Run, resultsAt: string | null): number {
+  const twentyFour =
+    new Date(run.created_at).getTime() + EDIT_WINDOW_HOURS * 60 * 60 * 1000;
+  if (!resultsAt) return twentyFour;
+  return Math.min(twentyFour, new Date(resultsAt).getTime());
 }
 
-/** เหลือเวลาแก้อีกกี่ชั่วโมง ปัดขึ้น ใช้บอกผู้ใช้ */
-export function hoursLeftToEdit(run: Run): number {
-  const created = new Date(run.created_at).getTime();
-  const msLeft = created + EDIT_WINDOW_HOURS * 60 * 60 * 1000 - Date.now();
+export function withinEditWindow(run: Run, resultsAt: string | null): boolean {
+  return Date.now() < editDeadline(run, resultsAt);
+}
+
+export function hoursLeftToEdit(run: Run, resultsAt: string | null): number {
+  const msLeft = editDeadline(run, resultsAt) - Date.now();
   return Math.max(0, Math.ceil(msLeft / (60 * 60 * 1000)));
 }

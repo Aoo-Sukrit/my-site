@@ -5,14 +5,30 @@ import Alert from "@/components/club/alert";
 import ClubLogo from "@/components/club-logo";
 import { SubmitButton } from "@/components/club/form-controls";
 import { requireApproved } from "@/lib/auth";
-import { getRoundChallenges, pendingForMe } from "@/lib/challenges";
-import { thaiDateTimeLong, thaiMonthLabel } from "@/lib/date";
-import { monthRange } from "@/lib/run-rules";
-import { getCurrentRound, getLeaderboard } from "@/lib/runs";
+import {
+  getRoundChallenges,
+  getRoundDeadlines,
+  pendingForMe,
+} from "@/lib/challenges";
+import {
+  bangkokToday,
+  hasPassed,
+  thaiDateTimeLong,
+  thaiMonthLabel,
+} from "@/lib/date";
+import { monthKeyOf, monthRange, previousMonthKey } from "@/lib/run-rules";
+import {
+  getCurrentRound,
+  getLeaderboard,
+  getRoundByMonth,
+  getRoundMonths,
+} from "@/lib/runs";
+import { getRoundPrizes } from "@/lib/prizes";
 import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
 import { logoutAction } from "./actions";
+import MonthPicker from "./month-picker";
 import RewardsTab from "./rewards";
 import {
   LogRunButton,
@@ -33,6 +49,29 @@ function periodLabel(month: string) {
   return `1–${lastDay} ${thaiMonthLabel(month)}`;
 }
 
+/**
+ * สรุปเดือนที่แล้วไว้ทำแถบชวนไปดู
+ *
+ * ถ้าเดือนนั้นไม่มีทั้งรางวัลและคำท้า ก็ไม่ต้องมีแถบ เพราะกดไปแล้วเจอแต่กระดาน
+ * เปล่าๆ ซึ่งคนดูได้จากตัวเลือกเดือนอยู่แล้ว
+ */
+async function lastMonthSummary(monthKey: string) {
+  const [prizes, challenges, deadlines] = await Promise.all([
+    getRoundPrizes(monthKey),
+    getRoundChallenges(monthKey),
+    getRoundDeadlines(monthKey),
+  ]);
+
+  if (prizes.length === 0 && challenges.length === 0) return null;
+  if (!deadlines) return null;
+
+  return {
+    monthKey,
+    settleAt: deadlines.settle_at,
+    settled: hasPassed(deadlines.settle_at),
+  };
+}
+
 export default async function ClubPage(props: PageProps<"/club">) {
   const viewer = await requireApproved();
   const params = await props.searchParams;
@@ -43,21 +82,60 @@ export default async function ClubPage(props: PageProps<"/club">) {
       : "distance";
   const showPercent = boardTab === "percent";
 
-  const round = await getCurrentRound();
-  const board = await getLeaderboard();
+  // เลือกเดือน ใส่ month มั่วๆ ให้กลับมาเดือนปัจจุบันเงียบๆ ไม่ต้องขึ้น error
+  // เพราะลิงก์เก่าที่เพื่อนส่งต่อกันในกลุ่มอาจชี้ไปเดือนที่ยังไม่มีรอบ
+  const months = await getRoundMonths();
+  const currentMonthKey =
+    months.find((row) => row.is_current)?.month.slice(0, 7) ??
+    monthKeyOf(bangkokToday());
+
+  const asked = typeof params.month === "string" ? params.month : null;
+  const selectedMonth =
+    asked && months.some((row) => row.month.slice(0, 7) === asked)
+      ? asked
+      : currentMonthKey;
+  const isCurrentMonth = selectedMonth === currentMonthKey;
+
+  // เดือนที่ผ่านไปแล้วอ่านอย่างเดียว ฐานข้อมูลกันไว้อยู่แล้วทุกทาง
+  // แต่ไม่ควรโชว์ปุ่มที่กดแล้วขึ้น error
+  const readOnly = !isCurrentMonth;
+  const monthArg = isCurrentMonth ? undefined : selectedMonth;
+
+  const round = isCurrentMonth
+    ? await getCurrentRound()
+    : await getRoundByMonth(selectedMonth);
+  const board = await getLeaderboard(monthArg);
   const phase = round
     ? roundPhase(round.target_opens_at, round.target_locks_at)
     : "before";
 
   // เรียกเฉพาะตอนดูกระดาน % จะได้ไม่ยิง RPC ทิ้งทุกครั้งที่เปิดหน้าแรก
   const percentRows =
-    showPercent && phase === "revealed" ? await getPercentBoard() : [];
+    showPercent && phase === "revealed" ? await getPercentBoard(monthArg) : [];
 
   // คำท้าที่รอเรากดรับ ต้องเด้งให้เห็นตั้งแต่หน้าแรก ไม่ใช่ซ่อนอยู่ในแท็บรางวัล
   // เพราะถ้าไม่มีใครกดจนเลยวันปิดรับ คำท้าจะตกไปเฉยๆ โดยไม่มีใครรู้ตัว
-  const myPendingChallenges = round
-    ? pendingForMe(await getRoundChallenges())
-    : [];
+  const myPendingChallenges =
+    round && isCurrentMonth ? pendingForMe(await getRoundChallenges()) : [];
+
+  // แถบชวนไปดูผลของเดือนที่แล้ว ขึ้นเฉพาะตอนดูเดือนปัจจุบัน
+  // และเฉพาะเดือนที่มีรางวัลหรือคำท้าอยู่จริง ไม่งั้นกดไปก็เจอหน้าว่าง
+  const lastMonthKey = previousMonthKey(currentMonthKey);
+  const lastMonthExists = months.some(
+    (row) => row.month.slice(0, 7) === lastMonthKey,
+  );
+  const lastMonth =
+    isCurrentMonth && lastMonthExists
+      ? await lastMonthSummary(lastMonthKey)
+      : null;
+
+  /** ลิงก์แท็บที่พาเดือนที่เลือกไปด้วย เดือนปัจจุบันไม่ต้องใส่ month */
+  const tabHref = (tab: "percent" | "rewards" | null) => {
+    const parts: string[] = [];
+    if (!isCurrentMonth) parts.push(`month=${selectedMonth}`);
+    if (tab) parts.push(`board=${tab}`);
+    return parts.length > 0 ? `/club?${parts.join("&")}` : "/club";
+  };
 
   const ranked = board.filter((row) => Number(row.total_km) > 0);
   const idle = board.filter((row) => Number(row.total_km) <= 0);
@@ -72,6 +150,29 @@ export default async function ClubPage(props: PageProps<"/club">) {
       ) : null}
       {typeof params.msg === "string" ? (
         <Alert tone="success">{params.msg}</Alert>
+      ) : null}
+
+      {lastMonth ? (
+        <Link
+          href={`/club?month=${lastMonth.monthKey}&board=rewards`}
+          className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 transition hover:border-accent"
+        >
+          <span>
+            <span className="block text-sm font-medium">
+              {lastMonth.settled
+                ? `ผลเดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ออกแล้ว`
+                : `เดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ยังรอผลวิ่งย้อนหลัง`}
+            </span>
+            <span className="block text-xs text-muted">
+              {lastMonth.settled
+                ? "ดูใครได้อะไร"
+                : `ตัดสิน ${thaiDateTimeLong(lastMonth.settleAt)}`}
+            </span>
+          </span>
+          <span aria-hidden className="text-xl text-muted">
+            →
+          </span>
+        </Link>
       ) : null}
 
       {myPendingChallenges.length > 0 ? (
@@ -104,9 +205,16 @@ export default async function ClubPage(props: PageProps<"/club">) {
           {round ? periodLabel(round.month) : "ยังไม่มีรอบของเดือนนี้"} ·{" "}
           {board.length} คน
         </p>
+
+        <MonthPicker
+          months={months}
+          selected={selectedMonth}
+          currentMonthKey={currentMonthKey}
+          board={boardTab === "distance" ? null : boardTab}
+        />
       </header>
 
-      {round && phase === "open" ? (
+      {round && isCurrentMonth && phase === "open" ? (
         <Link
           href="/club/target"
           className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
@@ -127,7 +235,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
 
       {/* พอเปิดผลแล้วแถบตั้งเป้าหายไป ทำให้ไม่มีทางไปดูผลจากหน้านี้เลย
           แถบนี้มาแทน อยู่จนหมดเดือน เพราะ round คือรอบของเดือนปัจจุบัน */}
-      {round && phase === "revealed" ? (
+      {round && isCurrentMonth && phase === "revealed" ? (
         <Link
           href="/club?board=rewards"
           className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
@@ -146,20 +254,24 @@ export default async function ClubPage(props: PageProps<"/club">) {
 
       {/* สลับกระดานด้วย query string ไม่ต้องใช้ JS ฝั่งเบราว์เซอร์เลย */}
       <nav className="flex gap-1 rounded-full border border-border p-1">
-        <BoardTab href="/club" active={boardTab === "distance"}>
+        <BoardTab href={tabHref(null)} active={boardTab === "distance"}>
           ระยะรวม
         </BoardTab>
-        <BoardTab href="/club?board=percent" active={boardTab === "percent"}>
+        <BoardTab href={tabHref("percent")} active={boardTab === "percent"}>
           % ของเป้า
         </BoardTab>
-        <BoardTab href="/club?board=rewards" active={boardTab === "rewards"}>
+        <BoardTab href={tabHref("rewards")} active={boardTab === "rewards"}>
           รางวัล
         </BoardTab>
       </nav>
 
       {boardTab === "rewards" ? (
         round ? (
-          <RewardsTab round={round} />
+          <RewardsTab
+            round={round}
+            monthKey={monthArg}
+            readOnly={readOnly}
+          />
         ) : (
           <p className="text-sm text-muted">ยังไม่มีรอบของเดือนนี้</p>
         )
@@ -218,7 +330,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
           ผลวิ่งของฉัน
         </Link>
         <Link
-          href="/club/share"
+          href={isCurrentMonth ? "/club/share" : `/club/share?month=${selectedMonth}`}
           className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
         >
           รูปลงสตอรี่
@@ -244,7 +356,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
         </form>
       </section>
 
-      <LogRunButton />
+      {isCurrentMonth ? <LogRunButton /> : null}
     </div>
   );
 }

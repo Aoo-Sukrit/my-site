@@ -1,15 +1,14 @@
-import { thaiMonthLabel } from "./date";
+import { thaiDateTimeLong, thaiMonthLabel } from "./date";
 
 /**
- * กติกาว่ากรอกผลวิ่งของวันไหนได้บ้าง
+ * กติกาของผลวิ่ง
  *
  * ไฟล์นี้เป็นฟังก์ชันล้วน ไม่แตะฐานข้อมูลและไม่แตะ DOM จึงเรียกได้ทั้งจาก
  * ฟอร์มฝั่งเบราว์เซอร์ (เพื่อบอกผู้ใช้ทันทีตอนเลือกวันที่) และจาก Server Action
  *
- * ตัวบังคับจริงคือ trigger runs_enforce_entry_window ในฐานข้อมูล
- * ตรงนี้มีไว้ให้ข้อความขึ้นเร็วและตรงกัน ถ้าสองฝั่งไม่ตรงกันให้ยึดฝั่งฐานข้อมูล
+ * เรื่องเวลา ไฟล์นี้ไม่มีเลขวันตายตัวอยู่เลย กติกาย้อนหลังมาจาก
+ * rounds.results_at ฝั่งฐานข้อมูล ซึ่งแอดมินเลื่อนได้
  */
-export const BACKDATE_GRACE_DAYS = 3;
 
 /**
  * ขั้นต่ำและขั้นสูงของระยะต่อหนึ่งรายการ
@@ -73,10 +72,31 @@ export type EntryCheck =
   | { ok: false; reason: string };
 
 /**
- * @param ranOn  วันที่วิ่ง YYYY-MM-DD
- * @param today  วันนี้ตามเวลาไทย YYYY-MM-DD
+ * เวลาตัดสินผลของแต่ละเดือน คีย์เป็น "2026-09" ค่าเป็น ISO timestamp
+ * มาจากตาราง rounds ฝั่งฐานข้อมูล ไม่ได้คำนวณเองที่นี่
  */
-export function checkEntryWindow(ranOn: string, today: string): EntryCheck {
+export type ResultsAtByMonth = Record<string, string>;
+
+/**
+ * กรอกผลวิ่งของวันนี้ได้ไหม
+ *
+ * กติกาเหลือข้อเดียว กรอกผลของรอบไหนก็ได้ที่ยังไม่ถึงเวลาตัดสินของรอบนั้น
+ * เดือนปัจจุบันผ่านเสมอเพราะเวลาตัดสินอยู่เดือนหน้า เดือนก่อนหน้าผ่านจนถึง
+ * เที่ยงวันที่ 1 หรือเวลาที่แอดมินเลื่อนไป
+ *
+ * ตัวบังคับจริงคือ trigger runs_enforce_entry_window ในฐานข้อมูล
+ * ตรงนี้มีไว้ให้ข้อความขึ้นเร็วและตรงกัน ถ้าสองฝั่งไม่ตรงกันให้ยึดฝั่งฐานข้อมูล
+ *
+ * @param ranOn     วันที่วิ่ง YYYY-MM-DD
+ * @param today     วันนี้ตามเวลาไทย YYYY-MM-DD
+ * @param resultsAt เวลาตัดสินของเดือนที่รู้จัก เดือนไหนไม่มีถือว่ายังไม่มีรอบ
+ */
+export function checkEntryWindow(
+  ranOn: string,
+  today: string,
+  resultsAt: ResultsAtByMonth,
+  now: number = Date.now(),
+): EntryCheck {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ranOn)) {
     return { ok: false, reason: "วันที่วิ่งไม่ถูกต้อง" };
   }
@@ -86,10 +106,10 @@ export function checkEntryWindow(ranOn: string, today: string): EntryCheck {
 
   const ranMonth = monthKeyOf(ranOn);
   const thisMonth = monthKeyOf(today);
-  const prevMonth = previousMonthKey(thisMonth);
-  const dayOfMonth = Number(today.slice(8, 10));
+  const deadline = resultsAt[ranMonth] ?? null;
 
   if (ranMonth === thisMonth) {
+    // รอบของเดือนนี้ถูกสร้างให้เองตอนกรอกครั้งแรก เวลาตัดสินจึงอยู่เดือนหน้าเสมอ
     return {
       ok: true,
       roundMonthKey: ranMonth,
@@ -97,23 +117,24 @@ export function checkEntryWindow(ranOn: string, today: string): EntryCheck {
     };
   }
 
-  if (ranMonth === prevMonth) {
-    if (dayOfMonth <= BACKDATE_GRACE_DAYS) {
-      return {
-        ok: true,
-        roundMonthKey: ranMonth,
-        hint: `นับเข้ารอบเดือน${labelOf(ranMonth)} (ช่วงผ่อนผัน ${BACKDATE_GRACE_DAYS} วันแรกของเดือนใหม่)`,
-      };
-    }
+  if (!deadline) {
     return {
       ok: false,
-      reason: `ผลวิ่งของเดือน${labelOf(ranMonth)} กรอกเองได้ถึงวันที่ ${BACKDATE_GRACE_DAYS} ของเดือนถัดไปเท่านั้น ตอนนี้เลยกำหนดแล้ว ให้แอดมินช่วยใส่ให้`,
+      reason: `ไม่มีรอบของเดือน${labelOf(ranMonth)} ในระบบ ให้แอดมินช่วยใส่ให้`,
+    };
+  }
+
+  if (now >= new Date(deadline).getTime()) {
+    return {
+      ok: false,
+      reason: `ผลวิ่งของเดือน${labelOf(ranMonth)} ตัดสินไปแล้วเมื่อ ${thaiDateTimeLong(deadline)} กรอกเองไม่ได้ ให้แอดมินช่วยใส่ให้`,
     };
   }
 
   return {
-    ok: false,
-    reason: `กรอกย้อนหลังเองได้แค่เดือนก่อนหน้า และต้องภายในวันที่ ${BACKDATE_GRACE_DAYS} ของเดือนใหม่ ผลวิ่งของเดือน${labelOf(ranMonth)} ต้องให้แอดมินใส่ให้`,
+    ok: true,
+    roundMonthKey: ranMonth,
+    hint: `นับเข้ารอบเดือน${labelOf(ranMonth)} (กรอกได้ถึง ${thaiDateTimeLong(deadline)})`,
   };
 }
 

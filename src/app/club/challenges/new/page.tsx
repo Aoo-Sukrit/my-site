@@ -4,7 +4,7 @@ import Link from "next/link";
 import Alert from "@/components/club/alert";
 import { requireApproved } from "@/lib/auth";
 import { getChallengeableMembers, getRoundDeadlines } from "@/lib/challenges";
-import { bangkokDayOfMonth, thaiDateTimeLong } from "@/lib/date";
+import { thaiDateTimeLong } from "@/lib/date";
 import { isJoinOpen } from "@/lib/challenge-rules";
 
 import ChallengeForm from "../challenge-form";
@@ -24,7 +24,6 @@ export default async function NewChallengePage() {
   // เวลาทั้งหมดมาจาก round_deadlines() ฝั่งฐานข้อมูล
   // หน้านี้ไม่รู้จักเลข 20 และไม่รู้จักเลข 4 เลย
   const open = deadlines ? isJoinOpen(deadlines.lock_at) : false;
-  const settleDay = deadlines ? bangkokDayOfMonth(deadlines.settle_at) : null;
 
   return (
     <div className="mx-auto max-w-md space-y-8">
@@ -63,7 +62,7 @@ export default async function NewChallengePage() {
           </p>
           <p>· ท้า รับ และลงเพิ่มได้ถึง {thaiDateTimeLong(deadlines.lock_at)}</p>
           <p>
-            · ตัดสินวันที่ {settleDay} ของเดือนถัดไป จากระยะจริง
+            · ตัดสิน {thaiDateTimeLong(deadlines.settle_at)} จากระยะจริง
             เพราะผลวิ่งกรอกย้อนหลังได้อีกไม่กี่วันหลังจบเดือน
           </p>
           <p>· ฝั่งแพ้เสียตามที่วาง ฝั่งชนะแบ่งกันตามสัดส่วน ปัดเป็นครึ่งขวด</p>

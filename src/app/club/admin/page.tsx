@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import Alert from "@/components/club/alert";
 import { requireAdmin } from "@/lib/auth";
-import { getCurrentRound } from "@/lib/runs";
+import { monthKeyOf, previousMonthKey } from "@/lib/run-rules";
+import { getCurrentRound, getRoundByMonth } from "@/lib/runs";
 import { roundPhase } from "@/lib/target-rules";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -12,6 +13,7 @@ import type { ProfileWithEmail } from "@/lib/supabase/types";
 import ChallengeList from "./challenge-list";
 import { MemberCard, PendingCard, RemovedCard } from "./member-card";
 import PrizeList from "./prize-list";
+import ResultsTime from "./results-time";
 import RoundWindow from "./round-window";
 
 export const metadata: Metadata = {
@@ -33,6 +35,10 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
   // (supabase/migrations/20260924000001_schema.sql ข้อ 7) ฟังก์ชันนี้เป็น security definer และเช็กเองว่า
   // คนเรียกเป็นแอดมินจริงถึงจะคืนข้อมูล
   const round = await getCurrentRound();
+  // เดือนที่แล้วเอาไว้ให้แอดมินต่อเวลาได้ ถ้าคนกรอกผลไม่ทัน
+  const previousRound = round
+    ? await getRoundByMonth(previousMonthKey(monthKeyOf(round.month)))
+    : null;
   // เปิดผลไปแล้วห้ามรีเซ็ตเป้าทีละคน ฐานข้อมูลก็กันไว้อีกชั้นใน 009
   const canResetTarget = round
     ? roundPhase(round.target_opens_at, round.target_locks_at) !== "revealed"
@@ -65,6 +71,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
       {errorMessage ? <Alert tone="error">{errorMessage}</Alert> : null}
       {message ? <Alert tone="success">{message}</Alert> : null}
       {error ? <Alert tone="error">{toThaiDbError(error)}</Alert> : null}
+
+      <ResultsTime current={round} previous={previousRound} />
 
       {round ? <RoundWindow round={round} /> : null}
 

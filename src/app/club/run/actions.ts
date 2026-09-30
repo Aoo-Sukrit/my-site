@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireApproved } from "@/lib/auth";
 import { bangkokToday, thaiMonthLabel } from "@/lib/date";
-import { checkDistance, checkEntryWindow } from "@/lib/run-rules";
+import { checkDistance, checkEntryWindow, monthKeyOf } from "@/lib/run-rules";
 import { getRoundForDate } from "@/lib/runs";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -58,14 +58,17 @@ export async function createRunAction(
 
   // กติกาเดียวกับ trigger runs_enforce_entry_window ในฐานข้อมูล
   // เช็กตรงนี้ด้วยเพื่อให้ข้อความอ่านง่าย ตัวบังคับจริงยังอยู่ฝั่งฐานข้อมูล
-  const window = checkEntryWindow(values.ranOn, bangkokToday());
-  if (!window.ok) return { error: window.reason, ok: false };
-
   // ผลวิ่งไปเข้ารอบของเดือนที่วิ่งจริง ไม่ใช่รอบของเดือนปัจจุบัน
+  // ต้องได้รอบมาก่อน เพราะเวลาตัดสินเป็นของแต่ละรอบ ไม่ใช่กติกาเลขตายตัวแล้ว
   const round = await getRoundForDate(values.ranOn);
   if (!round) {
     return { error: "หารอบของเดือนนั้นไม่เจอ ลองรีเฟรชอีกครั้ง", ok: false };
   }
+
+  const window = checkEntryWindow(values.ranOn, bangkokToday(), {
+    [monthKeyOf(values.ranOn)]: round.results_at,
+  });
+  if (!window.ok) return { error: window.reason, ok: false };
   if (round.status !== "open") {
     return {
       error: `รอบเดือน${thaiMonthLabel(round.month)} ปิดไปแล้ว กรอกย้อนเข้าไปไม่ได้`,

@@ -12,6 +12,7 @@ import {
   checkDistance,
   checkEntryWindow,
   monthRange,
+  type ResultsAtByMonth,
 } from "@/lib/run-rules";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { RUN_SOURCES } from "@/lib/supabase/types";
@@ -36,6 +37,7 @@ export default function RunForm({
   defaults,
   today,
   lockedMonth,
+  resultsAt,
   existingProofUrl,
 }: {
   mode: "new" | "edit";
@@ -46,6 +48,11 @@ export default function RunForm({
   today: string;
   /** โหมดแก้ไข: เดือนของรอบที่รายการนี้สังกัด ห้ามแก้วันที่ข้ามเดือน */
   lockedMonth?: string;
+  /**
+   * เวลาตัดสินของเดือนที่กรอกได้ คีย์เป็น "2026-09"
+   * ส่งมาจากเซิร์ฟเวอร์ เพราะเป็นค่าที่แอดมินเลื่อนได้ ไม่ใช่กติกาตายตัว
+   */
+  resultsAt: ResultsAtByMonth;
   /** โหมดแก้ไข: ลิงก์รูปหลักฐานเดิม ไว้ดูว่าของเดิมเป็นรูปอะไร */
   existingProofUrl?: string | null;
 }) {
@@ -80,11 +87,11 @@ export default function RunForm({
           };
     }
 
-    const check = checkEntryWindow(ranOn, today);
+    const check = checkEntryWindow(ranOn, today, resultsAt);
     return check.ok
       ? { ok: true as const, message: check.hint }
       : { ok: false as const, message: check.reason };
-  }, [mode, lockedMonth, ranOn, today]);
+  }, [mode, lockedMonth, ranOn, today, resultsAt]);
 
   /** บอกทันทีที่พิมพ์ระยะว่าเข้ากติกาไหม ไม่ต้องรอกดบันทึกแล้วค่อยเด้ง */
   const distanceState = useMemo(() => {

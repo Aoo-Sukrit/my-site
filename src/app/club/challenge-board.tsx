@@ -22,7 +22,6 @@ import {
   stakesByChallenge,
 } from "@/lib/challenges";
 import {
-  bangkokDayOfMonth,
   bangkokMonthEnd,
   daysLeftUntil,
   formatKm,
@@ -288,23 +287,25 @@ function ChallengeCard({
   row,
   stakes,
   monthEnd,
+  readOnly,
 }: {
   row: ChallengeRow;
   stakes: ChallengeStakeRow[];
   monthEnd: string;
+  readOnly: boolean;
 }) {
   const status = statusOf(row);
   const totalKm = Number(row.runner_total_km);
   const targetKm = Number(row.target_km);
   const reachedTarget = totalKm >= targetKm;
-  const settleDay = bangkokDayOfMonth(row.settle_at);
+  const settleLabel = thaiDateTimeLong(row.settle_at);
   const daysLeft = daysLeftUntil(monthEnd);
   const joinOpen = isJoinOpen(row.lock_at);
 
   // คู่กรณีสองคนวางเบียร์ไว้ตั้งแต่กดรับแล้ว ลงเพิ่มไม่ได้
   const bystander =
     row.my_side === null && !row.i_am_challenger && !row.i_am_runner;
-  const canJoin = status === "running" && joinOpen && bystander;
+  const canJoin = !readOnly && status === "running" && joinOpen && bystander;
   // คนนอกที่ยังไม่ได้ลง แต่หมดเวลาแล้ว ควรรู้ว่าทำไมไม่มีปุ่ม
   const missedTheWindow = status === "running" && !joinOpen && bystander;
 
@@ -317,7 +318,7 @@ function ChallengeCard({
     }
     if (reachedTarget) {
       return {
-        label: `ถึงแล้ว รอตัดสินวันที่ ${settleDay}`,
+        label: "ถึงแล้ว รอตัดสิน",
         tone: "win" as const,
       };
     }
@@ -353,10 +354,10 @@ function ChallengeCard({
           </span>
           <span className="text-xs text-muted">
             {isSettled(status)
-              ? `ตัดสินวันที่ ${settleDay} แล้ว`
+              ? `ตัดสินแล้ว ${settleLabel}`
               : daysLeft === 0
                 ? // เดือนจบแล้วแต่ยังกรอกผลย้อนหลังได้ ตัวเลขยังขยับได้อยู่
-                  `รอผลวิ่งย้อนหลัง ตัดสินวันที่ ${settleDay}`
+                  `รอผลวิ่งย้อนหลัง ตัดสิน ${settleLabel}`
                 : reachedTarget
                   ? `ถึงเป้าแล้ว · อีก ${daysLeft} วันจบเดือน`
                   : `เหลือ ${formatKm(remainingKm(totalKm, targetKm))} กม. · อีก ${daysLeft} วัน`}
@@ -395,7 +396,13 @@ function ChallengeCard({
 }
 
 /** ใบที่ยังรอคนถูกท้ากดรับ */
-function PendingCard({ row }: { row: ChallengeRow }) {
+function PendingCard({
+  row,
+  readOnly,
+}: {
+  row: ChallengeRow;
+  readOnly: boolean;
+}) {
   return (
     <li className="space-y-3 rounded-2xl border border-dashed border-club-line bg-surface p-4">
       <div className="flex items-start justify-between gap-2">
@@ -412,7 +419,9 @@ function PendingCard({ row }: { row: ChallengeRow }) {
         {thaiDateTimeLong(row.lock_at)} คำท้านี้ตกไป
       </p>
 
-      {row.i_am_runner ? (
+      {readOnly ? (
+        <p className="text-xs text-muted">เดือนนี้ผ่านไปแล้ว กดอะไรไม่ได้</p>
+      ) : row.i_am_runner ? (
         <div className="flex flex-wrap gap-2">
           <form action={acceptChallengeAction}>
             <input type="hidden" name="challenge_id" value={row.challenge_id} />
@@ -453,10 +462,18 @@ function PendingCard({ row }: { row: ChallengeRow }) {
   );
 }
 
-export default async function ChallengeBoard({ round }: { round: Round }) {
+export default async function ChallengeBoard({
+  round,
+  monthKey,
+  readOnly = false,
+}: {
+  round: Round;
+  monthKey?: string;
+  readOnly?: boolean;
+}) {
   const [challenges, stakeRows] = await Promise.all([
-    getRoundChallenges(),
-    getRoundChallengeStakes(),
+    getRoundChallenges(monthKey),
+    getRoundChallengeStakes(monthKey),
   ]);
 
   const grouped = stakesByChallenge(stakeRows);
@@ -481,22 +498,29 @@ export default async function ChallengeBoard({ round }: { round: Round }) {
             ยังไม่มีใครท้าใคร
           </p>
           <p className="text-sm text-muted">เปิดประเดิมเลย</p>
-          <Link href="/club/challenges/new" className={ADD_BUTTON}>
-            + ท้าเพื่อน
-          </Link>
+          {readOnly ? null : (
+            <Link href="/club/challenges/new" className={ADD_BUTTON}>
+              + ท้าเพื่อน
+            </Link>
+          )}
         </div>
       ) : (
         <>
           <ul className="space-y-3">
             {live.map((row) =>
               statusOf(row) === "pending" ? (
-                <PendingCard key={row.challenge_id} row={row} />
+                <PendingCard
+                  key={row.challenge_id}
+                  row={row}
+                  readOnly={readOnly}
+                />
               ) : (
                 <ChallengeCard
                   key={row.challenge_id}
                   row={row}
                   stakes={grouped.get(row.challenge_id) ?? []}
                   monthEnd={monthEnd}
+                  readOnly={readOnly}
                 />
               ),
             )}
@@ -514,9 +538,11 @@ export default async function ChallengeBoard({ round }: { round: Round }) {
             </ul>
           ) : null}
 
-          <Link href="/club/challenges/new" className={ADD_BUTTON}>
-            + ท้าเพื่อน
-          </Link>
+          {readOnly ? null : (
+            <Link href="/club/challenges/new" className={ADD_BUTTON}>
+              + ท้าเพื่อน
+            </Link>
+          )}
         </>
       )}
     </section>
