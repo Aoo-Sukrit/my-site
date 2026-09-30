@@ -178,7 +178,8 @@ export async function GET(request: NextRequest) {
           periodLabel={periodLabel}
           memberCount={entries.length}
           podium={active.slice(0, 3)}
-          rows={[...active.slice(3), ...resting]}
+          rows={active.slice(3)}
+          idleCount={resting.length}
           totalKm={summary}
           totalLabel={mode === "percent" ? "เฉลี่ยทั้งกลุ่ม" : "รวมทั้งกลุ่ม"}
           podiumStyle={podiumStyle}

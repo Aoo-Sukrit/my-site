@@ -34,8 +34,182 @@ const LINE = "#e6dcc8";
 export const STORY_WIDTH = 1080;
 export const STORY_HEIGHT = 1920;
 
-/** จำนวนแถวที่ยัดลงในหน้าได้พอดี เกินกว่านี้สรุปเป็นบรรทัดเดียว */
-const MAX_ROWS = 7;
+/**
+ * ความหนาแน่นของหน้า
+ *
+ * รูปสตอรี่สูงตายตัว 1920 แต่จำนวนคนในคลับไม่ตายตัว เมื่อก่อนแก้ด้วยการตัด
+ * คนท้ายๆ ทิ้งแล้วเขียนว่า "และอีก N คน" ซึ่งแปลว่าคนที่วิ่งจริงบางคนไม่ได้
+ * โผล่ในรูปที่เอาไปลงสตอรี่เลย รอบนี้เลยกลับด้าน: แสดงทุกคนที่มีผลเสมอ
+ * แล้วย่อขนาดลงเป็นขั้นๆ ตามจำนวนแถวแทน
+ *
+ * ย่อสองอย่างพร้อมกัน
+ *   - แถวในรายการ ความสูง รูป และตัวหนังสือ
+ *   - ส่วนหัว โลโก้กับโพเดียม เพื่อคืนที่ว่างให้รายการ
+ * ถ้าย่อจนแถวเตี้ยกว่าที่อ่านสบายแล้วยังไม่พอ ค่อยแบ่งเป็นสองคอลัมน์
+ *
+ * ตัวเลขทั้งหมดได้มาจากการเรนเดอร์จริงแล้วดูด้วยตาที่ 5, 12, 20 และ 30 คน
+ */
+
+const CONTENT_WIDTH = STORY_WIDTH - 56 * 2;
+
+type ListTier = {
+  columns: 1 | 2;
+  rowHeight: number;
+  photoWidth: number;
+  photoHeight: number;
+  photoRadius: number;
+  rankWidth: number;
+  rankSize: number;
+  nameSize: number;
+  valueSize: number;
+  subSize: number;
+  smallSize: number;
+  /** บรรทัดรอง (แคปชั่น หรือจำนวนครั้ง) แน่นมากแล้วตัดทิ้งเพื่อเอาที่ให้ชื่อ */
+  showSecondary: boolean;
+};
+
+const COLUMN_GAP = 28;
+
+type Density = {
+  logo: number;
+  mugFirst: number;
+  mugSide: number;
+  podiumNameFirst: number;
+  podiumNameSide: number;
+  podiumValueFirst: number;
+  podiumValueSide: number;
+  showPodiumCaption: boolean;
+  list: ListTier;
+};
+
+/** แถวต่อคอลัมน์ ใช้เลือกความสูงแถว ไม่ใช่จำนวนคนทั้งหมด */
+function rowsPerColumn(rowCount: number, columns: 1 | 2) {
+  return columns === 1 ? rowCount : Math.ceil(rowCount / 2);
+}
+
+function pickListTier(rowCount: number): ListTier {
+  // คอลัมน์เดียวอ่านง่ายกว่าเสมอ ใช้ไปจนกว่าแถวจะเตี้ยเกินรับได้
+  const columns: 1 | 2 = rowCount <= 7 ? 1 : 2;
+  const perColumn = rowsPerColumn(rowCount, columns);
+
+  // สองคอลัมน์แถวแคบลงครึ่งหนึ่ง ตัวเลขทางขวากับรูปกินที่เท่าเดิม เหลือให้ชื่อ
+  // น้อยมากจนโดนตัดเหลือเจ็ดแปดตัว ขยับลงอีกขั้นให้ฟอนต์เล็กลง ชื่อจะได้ยาวขึ้น
+  const step = columns === 1 ? perColumn : perColumn + 3;
+
+  if (step <= 7) {
+    return {
+      columns,
+      rowHeight: 92,
+      photoWidth: 54,
+      photoHeight: 72,
+      photoRadius: 12,
+      rankWidth: 44,
+      rankSize: 28,
+      nameSize: 30,
+      valueSize: 30,
+      subSize: 22,
+      smallSize: 20,
+      showSecondary: true,
+    };
+  }
+
+  if (step <= 10) {
+    return {
+      columns,
+      rowHeight: 74,
+      photoWidth: 44,
+      photoHeight: 59,
+      photoRadius: 10,
+      rankWidth: 40,
+      rankSize: 24,
+      nameSize: 26,
+      valueSize: 26,
+      subSize: 19,
+      smallSize: 17,
+      showSecondary: true,
+    };
+  }
+
+  if (step <= 13) {
+    return {
+      columns,
+      rowHeight: 58,
+      photoWidth: 36,
+      photoHeight: 48,
+      photoRadius: 8,
+      rankWidth: 36,
+      rankSize: 21,
+      nameSize: 23,
+      valueSize: 23,
+      subSize: 0,
+      smallSize: 16,
+      showSecondary: false,
+    };
+  }
+
+  return {
+    columns,
+    rowHeight: 48,
+    photoWidth: 30,
+    photoHeight: 40,
+    photoRadius: 7,
+    rankWidth: 32,
+    rankSize: 19,
+    nameSize: 20,
+    valueSize: 20,
+    subSize: 0,
+    smallSize: 14,
+    showSecondary: false,
+  };
+}
+
+/**
+ * คนเยอะก็ต้องคืนที่ว่างจากส่วนหัวให้รายการด้วย
+ * ย่อแค่โลโก้กับโพเดียม ไม่แตะหัวข้อกับแถบสรุป เพราะสองอันนั้นคือหน้าตาของคลับ
+ */
+function pickDensity(rowCount: number): Density {
+  const list = pickListTier(rowCount);
+
+  if (rowCount <= 8) {
+    return {
+      logo: 168,
+      mugFirst: 360,
+      mugSide: 276,
+      podiumNameFirst: 34,
+      podiumNameSide: 28,
+      podiumValueFirst: 38,
+      podiumValueSide: 32,
+      showPodiumCaption: true,
+      list,
+    };
+  }
+
+  if (rowCount <= 16) {
+    return {
+      logo: 132,
+      mugFirst: 300,
+      mugSide: 230,
+      podiumNameFirst: 30,
+      podiumNameSide: 25,
+      podiumValueFirst: 34,
+      podiumValueSide: 29,
+      showPodiumCaption: true,
+      list,
+    };
+  }
+
+  return {
+    logo: 104,
+    mugFirst: 250,
+    mugSide: 192,
+    podiumNameFirst: 26,
+    podiumNameSide: 22,
+    podiumValueFirst: 30,
+    podiumValueSide: 26,
+    showPodiumCaption: false,
+    list,
+  };
+}
 
 /**
  * ความสูงของกล่องรูปในโพเดียม เท่ากันทั้งสามช่องโดยตั้งใจ
@@ -45,15 +219,10 @@ const MAX_ROWS = 7;
  * ตรึงความสูงกล่องรูปไว้เท่ากัน แล้ววางรูปชิดล่างในกล่อง
  * ชื่อกับระยะของทั้งสามช่องจึงเริ่มที่ระดับเดียวกันเสมอ
  */
-const MUG_WIDTH_FIRST = 360;
-const MUG_WIDTH_SIDE = 276;
-
 /** แก้วสูงเท่าไหร่เมื่อกว้างเท่านี้ อัตราส่วนล็อกตามกรอบวาดใน beer-mug.ts */
 function mugHeight(width: number) {
   return Math.round((width * MUG_VIEW.height) / MUG_VIEW.width);
 }
-
-const PODIUM_PHOTO_BOX = mugHeight(MUG_WIDTH_FIRST);
 
 /**
  * ชนิดรูปที่ resvg (ตัวแปลง SVG เป็น PNG ที่อยู่หลัง next/og) อ่านออก
@@ -345,11 +514,13 @@ function PodiumSlot({
   first,
   mode,
   podiumStyle,
+  density,
 }: {
   entry: StoryEntry;
   first: boolean;
   mode: StoryMode;
   podiumStyle: PodiumStyle;
+  density: Density;
 }) {
   const width =
     podiumStyle === "square"
@@ -357,9 +528,13 @@ function PodiumSlot({
         ? 270
         : 210
       : first
-        ? MUG_WIDTH_FIRST
-        : MUG_WIDTH_SIDE;
-  const caption = truncate(entry.caption, first ? 28 : 22);
+        ? density.mugFirst
+        : density.mugSide;
+  const nameSize = first ? density.podiumNameFirst : density.podiumNameSide;
+  const valueSize = first ? density.podiumValueFirst : density.podiumValueSide;
+  const caption = density.showPodiumCaption
+    ? truncate(entry.caption, first ? 28 : 22)
+    : null;
   const small = smallLine(entry, mode);
 
   return (
@@ -374,7 +549,7 @@ function PodiumSlot({
       <div
         style={{
           display: "flex",
-          height: PODIUM_PHOTO_BOX,
+          height: mugHeight(density.mugFirst),
           alignItems: "flex-end",
         }}
       >
@@ -396,12 +571,12 @@ function PodiumSlot({
           marginTop: podiumStyle === "square" ? 38 : 14,
           // ตรึงความสูงด้วยฟอนต์ตัวใหญ่สุดเสมอ ไม่ใช่ตามขนาดของช่องตัวเอง
           // ไม่งั้นช่องอันดับ 1 จะดันบรรทัดตัวเลขลงไปต่ำกว่าอีกสองช่อง
-          height: Math.round(34 * 1.22 * 2),
+          height: Math.round(density.podiumNameFirst * 1.22 * 2),
           width,
           overflow: "hidden",
           textAlign: "center",
           color: INK,
-          fontSize: first ? 34 : 28,
+          fontSize: nameSize,
           lineHeight: 1.22,
           fontWeight: 600,
         }}
@@ -414,7 +589,7 @@ function PodiumSlot({
           color: ACCENT,
           fontFamily: "PlexThai",
           fontWeight: 600,
-          fontSize: first ? 38 : 32,
+          fontSize: valueSize,
         }}
       >
         {bigNumber(entry, mode)}
@@ -426,7 +601,9 @@ function PodiumSlot({
             display: "flex",
             marginTop: 2,
             color: MUTED,
-            fontSize: 22,
+            // ย่อตามความกว้างแก้ว ไม่งั้นพอแก้วแคบลงเพราะคนเยอะ
+            // "271.69 / 121.00 กม." จะตกบรรทัดจนคำว่า กม. ไปอยู่คนเดียว
+            fontSize: Math.round(density.podiumNameSide * 0.74),
           }}
         >
           {small}
@@ -453,51 +630,90 @@ function PodiumSlot({
   );
 }
 
-function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
+/**
+ * หนึ่งแถวในรายการ
+ *
+ * ทุกขนาดมาจาก tier ไม่มีตัวเลขตายตัวในนี้เลย เพราะแถวต้องเล็กลงได้ตามจำนวนคน
+ * width ของแถวถูกกำหนดจากข้างนอก (คอลัมน์) แถวจึงไม่ต้องรู้ว่าตัวเองอยู่
+ * คอลัมน์เดียวหรือสองคอลัมน์
+ */
+function ListRow({
+  entry,
+  mode,
+  tier,
+  rowWidth,
+}: {
+  entry: StoryEntry;
+  mode: StoryMode;
+  tier: ListTier;
+  rowWidth: number;
+}) {
+  // แถวแน่นๆ ตัดบรรทัดเล็กใต้ตัวเลขทิ้ง สูงสองบรรทัดในแถว 48px อ่านไม่ออกอยู่ดี
+  const small = tier.showSecondary ? smallLine(entry, mode) : null;
+
+  // ตัวเลขทางขวาต้องมีที่ของตัวเองตายตัว ไม่งั้นชื่อยาวๆ จะดันจนตัวเลขหลุดขอบ
+  // หรือไปทับกัน satori ไม่มี text-overflow ให้ใช้ จึงต้องกั้นที่เองแบบนี้
+  //
+  // โหมด % กว้างกว่าที่ตาเห็น เพราะใต้ "174%" ยังมี "255.07 / 123.00 กม."
+  // ซึ่งยาวกว่าตัวเลขเปอร์เซ็นต์หลายเท่า ต้องกันที่ตามบรรทัดที่ยาวที่สุด
+  const valueWidth = Math.round(
+    mode === "percent"
+      ? Math.max(tier.valueSize * 4.2, small ? tier.smallSize * 10.6 : 0)
+      : tier.valueSize * 5.4,
+  );
+  const nameWidth =
+    rowWidth - 16 - tier.rankWidth - 6 - tier.photoWidth - 10 - valueWidth;
+
+  /** ตัดข้อความให้พอดีกับความกว้างที่มี ไทยกับอังกฤษกว้างราว 0.55 เท่าของขนาดฟอนต์ */
+  const fit = (text: string | null, fontSize: number) =>
+    truncate(text, Math.max(4, Math.floor(nameWidth / (fontSize * 0.55))));
+
   // แคปชั่นมาก่อน ถ้าไม่มีค่อยบอกจำนวนครั้ง ไม่มีทั้งคู่ก็ไม่ต้องมีบรรทัดรอง
-  const secondary =
-    truncate(entry.caption, 44) ??
-    (entry.idle
-      ? mode === "percent"
-        ? "ยังไม่ได้ตั้งเป้า"
-        : "ยังไม่ได้กรอก"
-      : entry.runCount > 0
-        ? `${entry.runCount} ครั้ง`
-        : null);
-  const small = smallLine(entry, mode);
+  const secondary = tier.showSecondary
+    ? (fit(entry.caption, tier.subSize) ??
+      (entry.runCount > 0 ? `${entry.runCount} ครั้ง` : null))
+    : null;
+  const name = fit(entry.nickname, tier.nameSize) ?? entry.nickname;
 
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        height: 92,
-        paddingLeft: 12,
-        paddingRight: 12,
+        height: tier.rowHeight,
+        paddingLeft: 8,
+        paddingRight: 8,
         borderBottom: `2px solid ${LINE}`,
-        opacity: entry.idle ? 0.55 : 1,
       }}
     >
       <div
         style={{
           display: "flex",
-          width: 56,
+          width: tier.rankWidth,
+          flexShrink: 0,
           justifyContent: "center",
           color: MUTED,
-          fontSize: 28,
+          fontSize: tier.rankSize,
         }}
       >
-        {entry.idle ? "—" : entry.rankNo}
+        {entry.rankNo}
       </div>
 
-      <div style={{ display: "flex", marginLeft: 8, marginRight: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          flexShrink: 0,
+          marginLeft: 6,
+          marginRight: 10,
+        }}
+      >
         <Photo
           avatar={usableAvatar(entry.avatar)}
           nickname={entry.nickname}
-          width={54}
-          height={72}
-          radius={12}
-          fontSize={28}
+          width={tier.photoWidth}
+          height={tier.photoHeight}
+          radius={tier.photoRadius}
+          fontSize={Math.round(tier.photoWidth * 0.52)}
         />
       </div>
 
@@ -505,15 +721,28 @@ function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
         style={{
           display: "flex",
           flexDirection: "column",
-          flexGrow: 1,
+          width: nameWidth,
+          flexShrink: 0,
+          // ตัดด้วย … มาตั้งแต่ต้นแล้ว overflow hidden กันไว้อีกชั้น
+          // เผื่อตัวอักษรบางตัวกว้างกว่าที่เผื่อไว้
+          overflow: "hidden",
           justifyContent: "center",
         }}
       >
-        <div style={{ display: "flex", color: INK, fontSize: 30, fontWeight: 600 }}>
-          {entry.nickname}
+        <div
+          style={{
+            display: "flex",
+            color: INK,
+            fontSize: tier.nameSize,
+            fontWeight: 600,
+          }}
+        >
+          {name}
         </div>
         {secondary ? (
-          <div style={{ display: "flex", color: MUTED, fontSize: 22 }}>
+          <div
+            style={{ display: "flex", color: MUTED, fontSize: tier.subSize }}
+          >
             {secondary}
           </div>
         ) : null}
@@ -522,6 +751,8 @@ function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
       <div
         style={{
           display: "flex",
+          width: valueWidth,
+          flexShrink: 0,
           flexDirection: "column",
           alignItems: "flex-end",
         }}
@@ -532,13 +763,15 @@ function ListRow({ entry, mode }: { entry: StoryEntry; mode: StoryMode }) {
             color: INK,
             fontFamily: "PlexThai",
             fontWeight: 600,
-            fontSize: 30,
+            fontSize: tier.valueSize,
           }}
         >
           {bigNumber(entry, mode)}
         </div>
         {small ? (
-          <div style={{ display: "flex", color: MUTED, fontSize: 20 }}>
+          <div
+            style={{ display: "flex", color: MUTED, fontSize: tier.smallSize }}
+          >
             {small}
           </div>
         ) : null}
@@ -557,6 +790,7 @@ export function StoryCard({
   mode = "distance",
   totalLabel = "รวมทั้งกลุ่ม",
   podiumStyle = "mug",
+  idleCount = 0,
 }: {
   logo: string;
   periodLabel: string;
@@ -567,9 +801,22 @@ export function StoryCard({
   mode?: StoryMode;
   totalLabel?: string;
   podiumStyle?: PodiumStyle;
+  /** คนที่ยังไม่มีผลในเดือนนั้น ไม่ได้เป็นแถว แต่สรุปเป็นบรรทัดเดียวท้ายรายการ */
+  idleCount?: number;
 }) {
-  const shown = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS - 1) : rows;
-  const hidden = rows.length - shown.length;
+  // ไม่ตัดใครทิ้งแล้ว ทุกคนที่มีผลได้ขึ้นรูปครบ ย่อขนาดลงแทนถ้าคนเยอะ
+  const density = pickDensity(rows.length);
+  const tier = density.list;
+  const perColumn = rowsPerColumn(rows.length, tier.columns);
+  const columnWidth =
+    tier.columns === 1
+      ? CONTENT_WIDTH
+      : Math.floor((CONTENT_WIDTH - COLUMN_GAP) / 2);
+  // แบ่งครึ่งแบบอ่านลงล่างจนสุดคอลัมน์ซ้ายก่อน แล้วค่อยขึ้นหัวคอลัมน์ขวา
+  const columns =
+    tier.columns === 1
+      ? [rows]
+      : [rows.slice(0, perColumn), rows.slice(perColumn)];
 
   // เรียงโพเดียมเป็น 2 - 1 - 3 เหมือนบนเว็บ ติดธง first ไปกับตัวข้อมูลเลย
   // เพราะถ้ามีคนวิ่งไม่ครบสามคน ลำดับใน array จะเลื่อน เดาจาก index ไม่ได้
@@ -599,9 +846,14 @@ export function StoryCard({
       {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
       <img
         src={logo}
-        width={168}
-        height={168}
-        style={{ width: 168, height: 168, borderRadius: 28, flexShrink: 0 }}
+        width={density.logo}
+        height={density.logo}
+        style={{
+          width: density.logo,
+          height: density.logo,
+          borderRadius: 28,
+          flexShrink: 0,
+        }}
       />
 
       {/* flexShrink: 0 กับ lineHeight ที่ระบุชัด สำคัญมาก
@@ -675,6 +927,7 @@ export function StoryCard({
               first={slot.first}
               mode={mode}
               podiumStyle={podiumStyle}
+              density={density}
             />
           ))}
         </div>
@@ -688,25 +941,57 @@ export function StoryCard({
           marginTop: 36,
           flexGrow: 1,
           // รายการเป็นกล่องเดียวที่ยอมให้ยืดหดได้ ที่เหลือตรึงไว้หมด
+          // จัดกลางแนวตั้ง เพราะเดือนที่มีคนวิ่งไม่กี่คนจะเหลือที่ว่างเยอะ
+          // ถ้าชิดบนจะดูเหมือนรูปขาดครึ่งล่าง
+          justifyContent: "center",
           overflow: "hidden",
         }}
       >
-        {shown.map((entry) => (
-          <ListRow key={entry.memberId} entry={entry} mode={mode} />
-        ))}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
+            gap: COLUMN_GAP,
+          }}
+        >
+          {columns.map((column, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: columnWidth,
+              }}
+            >
+              {column.map((entry) => (
+                <ListRow
+                  key={entry.memberId}
+                  entry={entry}
+                  mode={mode}
+                  tier={tier}
+                  rowWidth={columnWidth}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
 
-        {hidden > 0 ? (
+        {/* คนที่ยังไม่มีผลไม่ได้เป็นแถว เพราะจะไปเบียดที่ของคนที่วิ่งจริง
+            แต่ก็ไม่หายไปเฉยๆ สรุปไว้บรรทัดเดียวให้รู้ว่ายังมีคนรออยู่ */}
+        {idleCount > 0 ? (
           <div
             style={{
               display: "flex",
-              height: 92,
-              alignItems: "center",
+              marginTop: 14,
               justifyContent: "center",
               color: MUTED,
-              fontSize: 26,
+              fontSize: 24,
             }}
           >
-            และอีก {hidden} คน
+            {mode === "percent"
+              ? `ยังไม่ได้ตั้งเป้า ${idleCount} คน`
+              : `ยังไม่เริ่ม ${idleCount} คน`}
           </div>
         ) : null}
       </div>
