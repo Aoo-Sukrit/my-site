@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileWithEmail } from "@/lib/supabase/types";
 
 import { MemberCard, PendingCard, RemovedCard } from "./member-card";
+import PrizeList from "./prize-list";
 import RoundWindow from "./round-window";
 
 export const metadata: Metadata = {
@@ -65,6 +66,8 @@ export default async function AdminPage(props: PageProps<"/club/admin">) {
       {error ? <Alert tone="error">{toThaiDbError(error)}</Alert> : null}
 
       {round ? <RoundWindow round={round} /> : null}
+
+      {round ? <PrizeList round={round} /> : null}
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-medium">

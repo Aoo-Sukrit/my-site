@@ -113,3 +113,20 @@ export function formatPercent(value: number | string | null): string {
   if (value === null) return "—";
   return `${Math.round(Number(value))}%`;
 }
+
+/**
+ * สิ้นเดือนของรอบนั้น คือเที่ยงคืนของวันที่ 1 เดือนถัดไปตามเวลาไทย
+ * ต้องตรงกับ round_month_end() ฝั่งฐานข้อมูล
+ */
+export function bangkokMonthEnd(monthStart: string): Date {
+  const [year, month] = monthStart.slice(0, 7).split("-").map(Number);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const stamp = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+07:00`;
+  return new Date(stamp);
+}
+
+/** เดือนของรอบนั้นจบไปแล้วหรือยัง */
+export function monthHasEnded(monthStart: string): boolean {
+  return Date.now() >= bangkokMonthEnd(monthStart).getTime();
+}

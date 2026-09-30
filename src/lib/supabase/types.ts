@@ -195,3 +195,27 @@ export function isRunSource(value: unknown): value is RunSource {
     typeof value === "string" && (RUN_SOURCES as readonly string[]).includes(value)
   );
 }
+
+// ---------------------------------------------------------------------------
+//  ระบบรางวัล (20260930120000_prizes.sql)
+//  มาจากฟังก์ชัน round_prizes() เท่านั้น ตาราง prizes ถูกปิดสิทธิ์ไว้หมด
+// ---------------------------------------------------------------------------
+
+export type PrizeRow = {
+  prize_id: string;
+  board: "distance" | "percent";
+  rank_no: number | null;
+  is_last: boolean;
+  /** null เมื่อยังปิดอุบและคนดูไม่ใช่คนให้ */
+  title: string | null;
+  detail: string | null;
+  image_path: string | null;
+  /** ยังปิดอุบอยู่ไหม ณ ตอนที่ถาม */
+  is_secret: boolean;
+  is_mine: boolean;
+  revealed_at: string | null;
+  created_at: string;
+  sponsor_id: string;
+  sponsor_nickname: string;
+  sponsor_avatar_url: string | null;
+};

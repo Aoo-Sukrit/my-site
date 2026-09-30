@@ -60,6 +60,12 @@ export default async function ClubPage(props: PageProps<"/club">) {
     // pb เผื่อที่ให้ปุ่มลอย ไม่ให้ไปบังเนื้อหาบรรทัดสุดท้าย
     <div className="space-y-8 pb-28">
       {params.saved ? <Alert tone="success">บันทึกผลวิ่งแล้ว</Alert> : null}
+      {typeof params.err === "string" ? (
+        <Alert tone="error">{params.err}</Alert>
+      ) : null}
+      {typeof params.msg === "string" ? (
+        <Alert tone="success">{params.msg}</Alert>
+      ) : null}
 
       <header className="space-y-3 text-center">
         <ClubLogo

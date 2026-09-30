@@ -13,6 +13,8 @@ import { roundPhase, signedDelta } from "@/lib/target-rules";
 import { getRoundTargets, getVoteBreakdown } from "@/lib/targets";
 import type { Round, VoteBreakdownRow } from "@/lib/supabase/types";
 
+import PrizeBoard from "./prize-board";
+
 /** สีป้ายตามเครื่องหมาย ใช้ token เดิมทั้งหมด บวกสีลบที่เพิ่งเพิ่มหนึ่งตัว */
 function badgeClass(delta: number) {
   if (delta > 0) return "bg-accent-strong text-background";
@@ -61,6 +63,15 @@ function VoterChip({ vote }: { vote: VoteBreakdownRow }) {
 }
 
 export default async function RewardsTab({ round }: { round: Round }) {
+  return (
+    <div className="space-y-10">
+      <PrizeBoard round={round} />
+      <VoteBreakdown round={round} />
+    </div>
+  );
+}
+
+async function VoteBreakdown({ round }: { round: Round }) {
   const phase = roundPhase(round.target_opens_at, round.target_locks_at);
 
   // ก่อนเวลาเปิดผลไม่ต้องยิง RPC เลย และถึงยิงไปฐานข้อมูลก็คืน 0 แถวอยู่ดี
