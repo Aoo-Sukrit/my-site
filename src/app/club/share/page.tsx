@@ -7,6 +7,8 @@ import { getCurrentRound, getRoundByMonth, getRoundMonths } from "@/lib/runs";
 import { thaiMonthLabel } from "@/lib/date";
 import { roundPhase } from "@/lib/target-rules";
 
+import StoryImage from "./story-image";
+
 export const metadata: Metadata = {
   title: "รูปลงสตอรี่",
 };
@@ -120,21 +122,17 @@ export default async function SharePage(props: PageProps<"/club/share">) {
             </p>
           </div>
 
-          {/* ใช้ <img> ธรรมดา ไม่ใช่ next/image เพราะการกดค้างเพื่อบันทึกภาพ
-              ต้องได้ไฟล์รูปตรงๆ และรูปนี้ถูกวาดสดทุกครั้ง ไม่ต้องให้ใคร optimize
-              ซ้ำ ส่วนปุ่มดาวน์โหลดตั้งใจไม่ทำ เพราะบน iOS Safari มักไม่ทำงาน
-              แต่กดค้างใช้ได้เสมอ */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          {/* รูปถูกวาดสดทุกครั้ง ใช้เวลาสองสามวินาที StoryImage เลยโชว์
+              "กำลังสร้างรูป…" คั่นไว้ก่อน ส่วนปุ่มดาวน์โหลดตั้งใจไม่ทำ
+              เพราะบน iOS Safari มักไม่ทำงาน แต่กดค้างใช้ได้เสมอ */}
+          <StoryImage
+            key={imageUrl}
             src={imageUrl}
             alt={
               showPercent
-                ? "กระดาน % ของเป้าเดือนนี้ กดค้างที่รูปเพื่อบันทึก"
-                : "กระดานระยะรวมของเดือนนี้ กดค้างที่รูปเพื่อบันทึก"
+                ? "กระดาน % ของเป้า กดค้างที่รูปเพื่อบันทึก"
+                : "กระดานระยะรวม กดค้างที่รูปเพื่อบันทึก"
             }
-            width={1080}
-            height={1920}
-            className="w-full rounded-2xl border border-border"
           />
         </>
       )}

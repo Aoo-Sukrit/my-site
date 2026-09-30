@@ -14,10 +14,13 @@ import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
 import {
+  LIST_AVATAR_WIDTH,
+  PODIUM_AVATAR_WIDTH,
   avatarObjectPath,
   fetchImageDataUri,
   loadFonts,
   loadLogoDataUri,
+  transformedAvatarUrl,
 } from "../assets";
 import {
   STORY_HEIGHT,
@@ -69,9 +72,14 @@ export async function GET(request: NextRequest) {
   const askedMonth = request.nextUrl.searchParams.get("month");
   const monthKey = /^\d{4}-\d{2}$/.test(askedMonth ?? "") ? askedMonth : null;
 
-  const round = monthKey
-    ? ((await getRoundByMonth(monthKey)) ?? (await getCurrentRound()))
-    : await getCurrentRound();
+  // สามอย่างนี้ไม่ได้ขึ้นแก่กัน ยิงพร้อมกันประหยัดไปหนึ่งรอบ round trip
+  const [fonts, logo, roundFromMonth] = await Promise.all([
+    loadFonts(),
+    loadLogoDataUri(),
+    monthKey ? getRoundByMonth(monthKey) : Promise.resolve(null),
+  ]);
+
+  const round = roundFromMonth ?? (await getCurrentRound());
   const monthArg = round ? round.month.slice(0, 7) : undefined;
 
   // ด่านที่สองของการปิดตา ฝั่งฐานข้อมูลคืน 0 แถวอยู่แล้วก่อนถึงเวลาเปิดผล
@@ -86,8 +94,6 @@ export async function GET(request: NextRequest) {
       return new Response("ยังไม่ถึงเวลาเปิดผลเป้า", { status: 409 });
     }
   }
-
-  const [fonts, logo] = await Promise.all([loadFonts(), loadLogoDataUri()]);
 
   let sourceRows: SourceRow[];
 
@@ -126,25 +132,44 @@ export async function GET(request: NextRequest) {
     }));
   }
 
-  // ขอลิงก์ที่มีลายเซ็นทีเดียวทั้งชุด แล้วค่อยดึงรูปมาฝังเป็น data URI
-  // ถ้าลิงก์ที่เซ็นใช้ไม่ได้ ค่อยถอยไปลองลิงก์ตรงที่เก็บไว้ในตาราง
-  // คนไหนได้ null สุดท้ายก็ไปแสดงเป็นตัวอักษรแรกแทน ไม่ทำให้ทั้งรูปพัง
-  const avatarPaths = sourceRows.map((row) => avatarObjectPath(row.avatar_url));
-  const signedAvatars = await signAvatarUrls(
-    avatarPaths.filter((path): path is string => path !== null),
-  );
-
+  // ขอรูปย่อจาก Supabase ก่อน ขนาดเท่าที่ใช้จริงในรูปสตอรี่
+  //
+  // สามคนแรกของ sourceRows คือโพเดียม (ทั้งสองกระดานเรียงคนที่มีผลไว้หน้าสุด)
+  // จึงขอใหญ่กว่าอีกนิด ที่เหลือเป็นแถวในรายการซึ่งเล็กมาก
   const avatars = await Promise.all(
-    sourceRows.map(async (row, index) => {
-      const path = avatarPaths[index];
-      const signed = path ? signedAvatars.get(path) : null;
-
-      return (
-        (await fetchImageDataUri(signed ?? null)) ??
-        (await fetchImageDataUri(row.avatar_url))
-      );
-    }),
+    sourceRows.map((row, index) =>
+      fetchImageDataUri(
+        transformedAvatarUrl(
+          row.avatar_url,
+          index < 3 ? PODIUM_AVATAR_WIDTH : LIST_AVATAR_WIDTH,
+        ),
+      ),
+    ),
   );
+
+  // คนไหนย่อไม่สำเร็จค่อยถอยไปลิงก์เต็ม ทำเฉพาะคนที่พลาดจริง จะได้ไม่เสียเวลา
+  // ขอลิงก์ที่เซ็นทั้งชุดทั้งที่ปกติไม่ได้ใช้เลย
+  // คนไหนได้ null สุดท้ายก็ไปแสดงเป็นตัวอักษรแรกแทน ไม่ทำให้ทั้งรูปพัง
+  const missing = sourceRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row, index }) => avatars[index] === null && row.avatar_url);
+
+  if (missing.length > 0) {
+    const paths = missing
+      .map(({ row }) => avatarObjectPath(row.avatar_url))
+      .filter((path): path is string => path !== null);
+    const signedAvatars = await signAvatarUrls(paths);
+
+    await Promise.all(
+      missing.map(async ({ row, index }) => {
+        const path = avatarObjectPath(row.avatar_url);
+        const signed = path ? signedAvatars.get(path) : null;
+        avatars[index] =
+          (await fetchImageDataUri(signed ?? null)) ??
+          (await fetchImageDataUri(row.avatar_url));
+      }),
+    );
+  }
 
   const entries: StoryEntry[] = sourceRows.map((row, index) => ({
     memberId: row.member_id,
