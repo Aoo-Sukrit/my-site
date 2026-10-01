@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AboutTagline from "@/components/about/tagline";
 import { getAboutProfile } from "@/lib/about";
 import { getViewer } from "@/lib/auth";
 import { thaiShortDate } from "@/lib/date";
@@ -66,26 +67,32 @@ export default async function HomePage() {
           <p className="whitespace-pre-line text-muted">{content.subtitle}</p>
         ) : null}
 
+        {/* วางเหมือนการ์ดบนหน้า ABOUT เป๊ะๆ รูปกับชื่ออยู่แถวบน
+            คำแนะนำตัวลงมาเต็มความกว้างข้างล่าง */}
         {aboutAvatar ? (
-          <div className="flex items-center gap-4 pt-1">
-            <Link
-              href="/about"
-              aria-label="ไปหน้าเกี่ยวกับ"
-              className="shrink-0 transition-opacity hover:opacity-85"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={aboutAvatar}
-                alt={profile?.display_name ?? ""}
-                className="h-16 w-16 rounded-full border border-border object-cover sm:h-20 sm:w-20"
-              />
-            </Link>
+          <div className="space-y-4 pt-1">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/about"
+                aria-label="ไปหน้าเกี่ยวกับ"
+                className="shrink-0 transition-opacity hover:opacity-85"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={aboutAvatar}
+                  alt={profile?.display_name ?? ""}
+                  className="h-20 w-20 rounded-full border border-border object-cover"
+                />
+              </Link>
 
-            {profile?.tagline ? (
-              <p className="min-w-0 flex-1 text-sm leading-relaxed text-muted">
-                {profile.tagline}
-              </p>
-            ) : null}
+              {profile?.display_name ? (
+                <p className="min-w-0 flex-1 font-display text-xl font-semibold tracking-tight">
+                  {profile.display_name}
+                </p>
+              ) : null}
+            </div>
+
+            <AboutTagline tagline={profile?.tagline ?? null} />
           </div>
         ) : null}
 

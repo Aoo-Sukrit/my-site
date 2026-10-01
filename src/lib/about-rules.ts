@@ -102,3 +102,35 @@ export function toSlug(input: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 40);
 }
+
+/**
+ * แยกบรรทัดแรกของคำแนะนำตัวออกมาเป็นป้ายหัวข้อ ถ้ามันลงท้ายด้วย ":"
+ *
+ * คนเขียนมักขึ้นต้นด้วยหัวข้อสั้นๆ แล้วค่อยไล่รายการข้างล่าง เช่น
+ *   My fav:
+ *   Snowboard · Wakeboard · Golf · Tennis
+ *   ...
+ * บรรทัดแรกแบบนั้นไม่ใช่เนื้อความ เป็นป้ายกำกับ จึงหยิบออกมาแสดงเป็นป้ายเล็ก
+ * ชุดเดียวกับ "WELCOME ABOARD" บนหน้าแรก แล้วตัด ":" ทิ้งเพราะป้ายไม่ต้องมี
+ *
+ * ถ้าไม่ได้ลงท้ายด้วย ":" ก็คืนทั้งก้อนเป็นเนื้อความตามเดิม ไม่ไปเดาแทนคนเขียน
+ *
+ * ฟังก์ชันล้วน ไม่แตะ DOM และไม่แตะฐานข้อมูล เรียกได้ทั้งสองฝั่ง
+ */
+export function taglineParts(tagline: string | null): {
+  label: string | null;
+  body: string | null;
+} {
+  const text = (tagline ?? "").trim();
+  if (!text) return { label: null, body: null };
+
+  const lines = text.split("\n");
+  const first = lines[0].trim();
+
+  // ต้องมีบรรทัดอื่นต่อท้ายด้วย ไม่งั้นป้ายจะลอยอยู่คนเดียวโดยไม่มีเนื้อความ
+  const isLabel = first.endsWith(":") && first.length > 1 && lines.length > 1;
+  if (!isLabel) return { label: null, body: text };
+
+  const body = lines.slice(1).join("\n").trim();
+  return { label: first.slice(0, -1).trim(), body: body || null };
+}

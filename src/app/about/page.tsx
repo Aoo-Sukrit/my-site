@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import AboutTagline from "@/components/about/tagline";
 import { getViewer } from "@/lib/auth";
 import { aboutIsEmpty, contactLinks } from "@/lib/about-rules";
 import { getAboutProfile } from "@/lib/about";
@@ -27,28 +28,28 @@ function ProfileCard({ profile }: { profile: AboutProfile }) {
 
   return (
     <section className="space-y-4 rounded-2xl border border-border bg-surface p-5">
-      <div className="flex items-start gap-4">
-        {avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={avatar}
-            alt={profile.display_name ?? ""}
-            className="h-20 w-20 shrink-0 rounded-full border border-border object-cover"
-          />
-        ) : null}
+      {/* รูปกับชื่ออยู่แถวเดียวกัน ส่วนคำแนะนำตัวลงมาเต็มความกว้างข้างล่าง
+          ถ้าเอาไปบีบไว้ข้างรูปบนจอ 375px จะเหลือที่ราว 190px ซึ่งทำให้
+          "Snowboard · Wakeboard · Golf · Tennis" ตกบรรทัดกลางรายการ */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatar}
+              alt={profile.display_name ?? ""}
+              className="h-20 w-20 shrink-0 rounded-full border border-border object-cover"
+            />
+          ) : null}
 
-        <div className="min-w-0 flex-1 space-y-1">
           {profile.display_name ? (
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="min-w-0 flex-1 font-display text-2xl font-semibold tracking-tight">
               {profile.display_name}
             </h1>
           ) : null}
-          {profile.tagline ? (
-            <p className="text-sm leading-relaxed text-muted">
-              {profile.tagline}
-            </p>
-          ) : null}
         </div>
+
+        <AboutTagline tagline={profile.tagline} />
       </div>
 
       {profile.chips.length > 0 ? (
