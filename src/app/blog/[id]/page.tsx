@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getViewer } from "@/lib/auth";
 import { excerpt, youTubeThumb } from "@/lib/post-rules";
-import { getPostById, postImageUrl } from "@/lib/posts";
+import { getPostById, getPostFeed, postImageUrl } from "@/lib/posts";
 
 import PostView from "../post-view";
 
@@ -54,7 +54,20 @@ export default async function PostPage(props: PageProps<"/blog/[id]">) {
   // ถ้าแยกเป็น 403 กับ 404 คนนอกจะเดาได้ว่า id ไหนมีโพสต์อยู่จริง
   if (!post) notFound();
 
+  // pinned ไม่ได้อยู่ใน post_by_id() เพราะคนอ่านทั่วไปไม่ต้องรู้
+  // แอดมินเท่านั้นที่เห็นปุ่ม จึงไปหยิบจากฟีดของหมวดนั้นเอา
+  const pinned =
+    viewer?.profile.is_admin === true && post.section_kind !== "blog"
+      ? (await getPostFeed(post.section_slug, 100)).some(
+          (row) => row.id === post.id && row.pinned,
+        )
+      : false;
+
   return (
-    <PostView post={post} isAdmin={viewer?.profile.is_admin ?? false} />
+    <PostView
+      post={post}
+      isAdmin={viewer?.profile.is_admin ?? false}
+      pinned={pinned}
+    />
   );
 }

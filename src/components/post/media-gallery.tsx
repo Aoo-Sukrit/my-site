@@ -84,6 +84,10 @@ export default function MediaGallery({ items }: { items: GalleryItem[] }) {
                 }
                 className="block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-surface"
               >
+                {/* รูปแนวตั้งจัดๆ อย่างแคปหน้าจอมือถือ ถ้าปล่อยเต็มความกว้าง
+                    จะสูงกว่าจอหลายเท่าจนต้องถ่อเลื่อนผ่านทีละรูป
+                    จำกัดความสูงไว้ราวสามในสี่ของจอ และใช้ object-contain
+                    จะได้ไม่ตัดรูป กดดูเต็มจอยังเห็นครบเหมือนเดิม */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.src}
@@ -91,7 +95,7 @@ export default function MediaGallery({ items }: { items: GalleryItem[] }) {
                   width={item.width ?? undefined}
                   height={item.height ?? undefined}
                   loading="lazy"
-                  className="block h-auto w-full"
+                  className="mx-auto block max-h-[75vh] w-full object-contain"
                 />
               </button>
               {item.caption ? (

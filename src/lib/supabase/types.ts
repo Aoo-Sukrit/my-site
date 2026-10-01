@@ -314,6 +314,8 @@ export type PostSection = {
   kind: "blog" | "work" | "hobby";
   intro: string | null;
   cover_url: string | null;
+  /** รูปแรกของโพสต์ล่าสุดในหมวด ใช้เป็นรูปปกเมื่อแอดมินยังไม่ได้ตั้งเอง */
+  fallback_cover: string | null;
   /** ฐานข้อมูลคืนชื่อนี้ ไม่ใช่ position เพราะ Postgres ใช้ชื่อนั้นเป็นพารามิเตอร์ไม่ได้ */
   sort_order: number;
   hidden: boolean;
@@ -344,6 +346,8 @@ export type PostCard = {
   section_kind: "blog" | "work" | "hobby";
   visibility: string;
   status: string;
+  /** ปักหมุดให้ขึ้นการ์ดใหญ่บนหน้า ABOUT */
+  pinned: boolean;
   published_at: string | null;
   created_at: string;
   media_count: number;
@@ -367,4 +371,41 @@ export type PostDetail = {
   /** คืนเฉพาะแอดมิน หรือตอนเข้ามาทางลิงก์ลับ */
   share_token: string | null;
   media: PostMedia[];
+};
+
+// ---------------------------------------------------------------------------
+//  หน้า ABOUT (20261002090000_about.sql)
+// ---------------------------------------------------------------------------
+
+/** ข้อความสั้นหนึ่งชิ้นในแถบตัวเลขเด่น */
+export type AboutStat = { value: string; label: string };
+
+export type AboutProfile = {
+  display_name: string | null;
+  tagline: string | null;
+  story: string | null;
+  /** ที่อยู่ไฟล์ในบัคเก็ต post-media ไม่ใช่ URL เต็ม */
+  avatar_url: string | null;
+  chips: string[];
+  line_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  strava_url: string | null;
+  email: string | null;
+  stats: AboutStat[];
+};
+
+/** รูปหนึ่งใบในแกลเลอรีของหมวด กดแล้วไปที่โพสต์ต้นทาง */
+export type GalleryImage = {
+  post_id: string;
+  post_title: string;
+  url: string;
+  caption: string | null;
+};
+
+export type RunningStats = {
+  year_km: string;
+  month_km: string;
+  month_rank: number | null;
+  months: { month: string; km: string }[] | null;
 };

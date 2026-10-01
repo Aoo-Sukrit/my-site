@@ -55,10 +55,6 @@ export default async function SharedPostPage(props: PageProps<"/p/[token]">) {
   if (!post) notFound();
 
   return (
-    <PostView
-      post={post}
-      isAdmin={viewer?.profile.is_admin ?? false}
-      viaToken
-    />
+    <PostView post={post} isAdmin={viewer?.profile.is_admin ?? false} viaToken />
   );
 }
