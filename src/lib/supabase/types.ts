@@ -314,7 +314,8 @@ export type PostSection = {
   kind: "blog" | "work" | "hobby";
   intro: string | null;
   cover_url: string | null;
-  position: number;
+  /** ฐานข้อมูลคืนชื่อนี้ ไม่ใช่ position เพราะ Postgres ใช้ชื่อนั้นเป็นพารามิเตอร์ไม่ได้ */
+  sort_order: number;
   hidden: boolean;
   /** จำนวนโพสต์ที่ "คนที่กำลังดูอยู่" เห็นได้ ไม่ใช่จำนวนทั้งหมด */
   post_count: number;

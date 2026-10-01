@@ -241,7 +241,10 @@ returns table (
   kind        text,
   intro       text,
   cover_url   text,
-  position    int,
+  -- ชื่อ sort_order ไม่ใช่ position เพราะ Postgres ใช้ position เป็นชื่อ
+  -- พารามิเตอร์ของฟังก์ชันไม่ได้ (มันเป็น col_name_keyword ของ POSITION(x IN y))
+  -- เป็นชื่อคอลัมน์ในตารางได้ แต่เป็นชื่อพารามิเตอร์ไม่ได้
+  sort_order  int,
   hidden      boolean,
   post_count  bigint
 )
