@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { getAboutProfile } from "@/lib/about";
 import { getViewer } from "@/lib/auth";
 import { thaiShortDate } from "@/lib/date";
 import { getClubSummary, getHomeContent } from "@/lib/home";
@@ -8,11 +9,6 @@ import { getPostFeed, postImageUrl } from "@/lib/posts";
 import type { PostCard } from "@/lib/supabase/types";
 
 import ClubCard from "./club-card";
-
-const secondaryLinks = [
-  { href: "/about", label: "ABOUT" },
-  { href: "/blog", label: "BLOG" },
-];
 
 function coverOf(post: PostCard): string | null {
   if (post.cover_kind === "image") return postImageUrl(post.cover_url);
@@ -23,14 +19,20 @@ function coverOf(post: PostCard): string | null {
 }
 
 export default async function HomePage() {
-  const [viewer, content, summary, posts] = await Promise.all([
+  const [viewer, content, summary, posts, profile] = await Promise.all([
     getViewer(),
     getHomeContent(),
     getClubSummary(),
     getPostFeed(null, 3),
+    getAboutProfile(),
   ]);
 
   const isAdmin = viewer?.profile.is_admin ?? false;
+
+  // รูปกับประโยคแนะนำตัวมาจากหน้า ABOUT ตรงๆ ไม่ได้ก๊อปมาเก็บไว้อีกที่
+  // แก้ที่ /about/edit ที่เดียวแล้วเปลี่ยนทั้งสองหน้าพร้อมกัน
+  // ไม่มีรูปก็ไม่ต้องขึ้นแถวนี้ ขึ้นแต่ประโยคลอยๆ แล้วดูเหมือนพิมพ์ตกหล่น
+  const aboutAvatar = postImageUrl(profile?.avatar_url ?? null);
 
   return (
     <div className="space-y-12">
@@ -64,6 +66,29 @@ export default async function HomePage() {
           <p className="whitespace-pre-line text-muted">{content.subtitle}</p>
         ) : null}
 
+        {aboutAvatar ? (
+          <div className="flex items-center gap-4 pt-1">
+            <Link
+              href="/about"
+              aria-label="ไปหน้าเกี่ยวกับ"
+              className="shrink-0 transition-opacity hover:opacity-85"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={aboutAvatar}
+                alt={profile?.display_name ?? ""}
+                className="h-16 w-16 rounded-full border border-border object-cover sm:h-20 sm:w-20"
+              />
+            </Link>
+
+            {profile?.tagline ? (
+              <p className="min-w-0 flex-1 text-sm leading-relaxed text-muted">
+                {profile.tagline}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {content?.intro ? (
           <p className="whitespace-pre-line text-muted">{content.intro}</p>
         ) : null}
@@ -78,25 +103,13 @@ export default async function HomePage() {
         ) : null}
       </section>
 
-      <section className="space-y-4">
+      <section>
         <ClubCard
           href="/club"
           eyebrow="CLUB"
           blurb={content?.club_blurb ?? null}
           summary={summary}
         />
-
-        <div className="flex flex-wrap gap-3">
-          {secondaryLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-full border border-border px-4 py-2 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
       </section>
 
       {posts.length > 0 ? (

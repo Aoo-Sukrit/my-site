@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       "src/app/club/share/fonts/**/*",
       "public/club-logo.jpg",
     ],
+    // รูปพรีวิวตอนแชร์ อ่านไฟล์ชุดเดียวกันด้วยวิธีเดียวกัน
+    "/opengraph-image": [
+      "src/app/club/share/fonts/**/*",
+      "public/club-logo.jpg",
+    ],
   },
 };
 

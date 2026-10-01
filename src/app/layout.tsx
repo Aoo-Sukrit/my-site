@@ -16,7 +16,25 @@ const plexThaiLooped = IBM_Plex_Sans_Thai_Looped({
   weight: ["400", "500", "600"],
 });
 
+/**
+ * ที่อยู่ของเว็บ ใช้ต่อหน้าลิงก์รูปพรีวิวตอนแชร์ให้เป็น URL เต็ม
+ *
+ * ไม่ได้ฝังโดเมนไว้ในโค้ด เพราะ preview กับ production คนละโดเมน และโดเมนจริง
+ * อาจเปลี่ยนได้ Vercel ใส่ค่าพวกนี้มาให้เองตอน deploy
+ *   VERCEL_PROJECT_PRODUCTION_URL  โดเมนจริงของโปรเจกต์ (รวมโดเมนที่ตั้งเอง)
+ *   VERCEL_URL                     โดเมนของ deploy นั้นๆ ใช้ตอนเปิด preview
+ * ตอนรันในเครื่องไม่มีทั้งคู่ จึงถอยไปที่ localhost
+ *
+ * ถ้าไม่ตั้งค่านี้ Next ก็เดาเองได้ แต่จะเตือนตอน build ทุกครั้ง
+ * เขียนไว้ตรงนี้ให้เห็นชัดกว่าว่าลิงก์รูปพรีวิวชี้ไปที่ไหน
+ */
+const origin =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    origin ? `https://${origin}` : "http://localhost:3000",
+  ),
   title: {
     default: site.name,
     template: `%s · ${site.name}`,
