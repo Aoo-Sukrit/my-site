@@ -2,6 +2,7 @@ import { POST_BUCKET } from "./post-rules";
 import { readSupabaseEnv } from "./supabase/env";
 import { createSupabaseServerClient } from "./supabase/server";
 import type {
+  BlogContent,
   PostCard,
   PostDetail,
   PostSection,
@@ -73,4 +74,17 @@ export function postImageUrl(path: string | null): string | null {
   const { url } = readSupabaseEnv();
   if (!url) return null;
   return `${url}/storage/v1/object/public/${POST_BUCKET}/${path}`;
+}
+
+/**
+ * หัวข้อหน้า BLOG
+ *
+ * อยู่ไฟล์นี้เพราะเป็นข้อความของหน้า BLOG เหมือนกัน ไม่ได้แยกเป็น blog.ts
+ * ใหม่ให้มีไฟล์ที่มีฟังก์ชันเดียว
+ */
+export async function getBlogContent(): Promise<BlogContent | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("blog_content_get");
+  const rows = (data ?? []) as BlogContent[];
+  return rows[0] ?? null;
 }

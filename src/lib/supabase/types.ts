@@ -424,6 +424,13 @@ export type HomeContent = {
   club_blurb: string | null;
 };
 
+/** หัวข้อและประโยคใต้หัวข้อของหน้า BLOG */
+export type BlogContent = {
+  title: string;
+  /** null เมื่อเว้นว่างไว้ หน้าเว็บซ่อนให้เอง */
+  subtitle: string | null;
+};
+
 /** ตัวเลขสดของคลับเดือนปัจจุบัน สำหรับการ์ดบนหน้าแรก */
 export type ClubSummary = {
   round_month: string;

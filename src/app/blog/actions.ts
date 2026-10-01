@@ -149,3 +149,30 @@ export async function deletePostAction(formData: FormData) {
   refresh();
   redirect("/blog?msg=" + encodeURIComponent("ลบโพสต์แล้ว"));
 }
+
+/**
+ * หัวข้อกับประโยคใต้หัวข้อของหน้า BLOG
+ *
+ * หัวข้อห้ามว่าง ดักทั้งสองฝั่ง ฝั่งนี้เพื่อไม่ต้องยิงไปถามฐานข้อมูลเปล่าๆ
+ * ฝั่งฐานข้อมูลเพราะใครก็ยิง rpc เองได้ ไม่ได้ผ่านหน้านี้เสมอ
+ */
+export async function saveBlogContentAction(values: {
+  title: string;
+  subtitle: string;
+}): Promise<{ ok: boolean; error: string | null }> {
+  await requireAdmin();
+
+  const title = values.title.trim();
+  if (!title) return { ok: false, error: "หัวข้อใหญ่เว้นว่างไม่ได้" };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("admin_save_blog_content", {
+    p_title: title,
+    p_subtitle: values.subtitle,
+  });
+
+  if (error) return { ok: false, error: toThaiDbError(error) };
+
+  revalidatePath("/blog");
+  return { ok: true, error: null };
+}

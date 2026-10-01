@@ -5,8 +5,15 @@ import Alert from "@/components/club/alert";
 import { getViewer } from "@/lib/auth";
 import { thaiShortDate } from "@/lib/date";
 import { excerpt, postBadge, youTubeThumb } from "@/lib/post-rules";
-import { getPostFeed, getPostSections, postImageUrl } from "@/lib/posts";
+import {
+  getBlogContent,
+  getPostFeed,
+  getPostSections,
+  postImageUrl,
+} from "@/lib/posts";
 import type { PostCard } from "@/lib/supabase/types";
+
+import BlogHeader from "./blog-header";
 
 export const metadata: Metadata = {
   title: "BLOG",
@@ -106,7 +113,8 @@ export default async function BlogPage(props: PageProps<"/blog">) {
 
   const asked = typeof params.section === "string" ? params.section : null;
 
-  const [sections, posts] = await Promise.all([
+  const [content, sections, posts] = await Promise.all([
+    getBlogContent(),
     getPostSections(),
     getPostFeed(asked),
   ]);
@@ -123,23 +131,7 @@ export default async function BlogPage(props: PageProps<"/blog">) {
         <Alert tone="success">{params.msg}</Alert>
       ) : null}
 
-      <section className="space-y-3">
-        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          บล็อก
-        </h1>
-        <p className="text-muted">
-          เรื่องที่อยากเล่า งานที่ทำ และอะไรที่เจอระหว่างทาง
-        </p>
-
-        {isAdmin ? (
-          <Link
-            href="/blog/new"
-            className="inline-flex min-h-11 items-center rounded-full bg-club-line px-5 text-sm font-medium tracking-wide text-background transition hover:opacity-90"
-          >
-            + เขียนโพสต์
-          </Link>
-        ) : null}
-      </section>
+      <BlogHeader content={content} isAdmin={isAdmin} />
 
       {sections.length > 1 ? (
         // overflow-x-auto ให้ชิปเลื่อนแนวนอนบนมือถือ ไม่ตกบรรทัดจนรก

@@ -11,6 +11,11 @@ import type { ClubSummary } from "@/lib/supabase/types";
  * แยกเป็น component ที่รับทุกอย่างทางพรอพ ไม่ได้ไปดึงข้อมูลเอง เผื่อวันหลัง
  * มีคลับที่สอง จะได้วางการ์ดใบที่สองต่อได้เลยโดยไม่ต้องรื้อหน้าแรก
  * (ตอนนี้ยังไม่มีระบบหลายคลับ แค่เตรียมรูปร่างไว้)
+ *
+ * ชื่อ รูป และระยะของคนที่นำอยู่ จะมาเฉพาะตอนคนที่กำลังดูเป็นสมาชิกที่อนุมัติแล้ว
+ * ฟังก์ชัน home_club_summary() ฝั่งฐานข้อมูลเป็นคนตัดให้ ที่นี่ไม่ได้เช็กซ้ำ
+ * เพราะถ้าเช็กสองที่แล้ววันหลังแก้ที่เดียว จะกลายเป็นว่าไม่รู้ว่าที่ไหนคุมจริง
+ * ที่นี่แค่ถามว่า "ได้ชื่อคนนำมาไหม" ถ้าไม่ได้ก็ไม่ต้องวางแถวนั้น
  */
 export default function ClubCard({
   href,
@@ -26,10 +31,12 @@ export default function ClubCard({
   summary: ClubSummary | null;
   logo?: React.ReactNode;
 }) {
-  const hasNumbers = summary !== null && summary.leader_nickname !== null;
   const daysLeft = summary
     ? daysLeftUntil(bangkokMonthEnd(summary.round_month).toISOString())
     : 0;
+
+  // ยังไม่มีใครกรอกผลเลย ตัวเลขทุกตัวเป็นศูนย์ ขึ้นคำชวนดีกว่าขึ้น 0.00 กม.
+  const started = summary !== null && Number(summary.total_km) > 0;
 
   return (
     <Link
@@ -50,25 +57,28 @@ export default function ClubCard({
           <p className="mt-2 whitespace-pre-line text-lg">{blurb}</p>
         ) : null}
 
-        {hasNumbers && summary ? (
+        {started && summary ? (
           <div className="mt-4 space-y-2.5">
-            <div className="flex items-center gap-2.5">
-              <Avatar
-                src={summary.leader_avatar_url}
-                nickname={summary.leader_nickname ?? ""}
-                size={32}
-              />
-              <span className="min-w-0 flex-1 truncate text-sm">
-                <span className="text-club-line">นำอยู่ </span>
-                <span className="font-medium">{summary.leader_nickname}</span>
-              </span>
-              <span className="shrink-0 font-display text-sm font-semibold">
-                {formatKm(summary.leader_km ?? 0)} กม.
-              </span>
-            </div>
+            {summary.leader_nickname ? (
+              <div className="flex items-center gap-2.5">
+                <Avatar
+                  src={summary.leader_avatar_url}
+                  nickname={summary.leader_nickname}
+                  size={32}
+                />
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  <span className="text-club-line">นำอยู่ </span>
+                  <span className="font-medium">{summary.leader_nickname}</span>
+                </span>
+                <span className="shrink-0 font-display text-sm font-semibold">
+                  {formatKm(summary.leader_km ?? 0)} กม.
+                </span>
+              </div>
+            ) : null}
 
             <p className="text-sm text-club-line">
-              แก๊งวิ่งรวมกัน {formatKm(summary.total_km)} กม.
+              แก๊ง {summary.member_count} คน · วิ่งรวมกัน{" "}
+              {formatKm(summary.total_km)} กม.
               {daysLeft > 0 ? ` · เหลืออีก ${daysLeft} วัน` : " · เดือนนี้จบแล้ว"}
             </p>
           </div>
