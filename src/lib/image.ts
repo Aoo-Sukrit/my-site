@@ -49,12 +49,20 @@ function drawToCanvas(
  */
 export async function shrinkToJpeg(
   file: Blob,
-  { maxEdge = 1400, maxBytes = MAX_UPLOAD_BYTES } = {},
+  {
+    maxEdge = 1400,
+    maxBytes = MAX_UPLOAD_BYTES,
+    // คุณภาพที่อยากได้เป็นอันดับแรก ถ้าไฟล์ยังใหญ่เกินค่อยไล่ลดลงไปเอง
+    quality: firstQuality = 0.85,
+  } = {},
 ): Promise<Blob> {
   const bitmap = await decodeOriented(file);
 
   try {
     let edge = maxEdge;
+    const ladder = [firstQuality, 0.72, 0.6, 0.48].filter(
+      (value, index, all) => all.indexOf(value) === index,
+    );
 
     for (let round = 0; round < 5; round += 1) {
       const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
@@ -62,7 +70,7 @@ export async function shrinkToJpeg(
       const height = Math.max(1, Math.round(bitmap.height * scale));
       const canvas = drawToCanvas(bitmap, width, height);
 
-      for (const quality of [0.85, 0.72, 0.6, 0.48]) {
+      for (const quality of ladder) {
         const blob = await toJpegBlob(canvas, quality);
         if (blob && blob.size <= maxBytes) return blob;
       }
@@ -107,4 +115,22 @@ export async function makeAvatarThumb(source: Blob): Promise<Blob> {
   }
 
   throw new Error("สร้างรูปเล็กไม่สำเร็จ");
+}
+
+/**
+ * เตรียมรูปที่ผู้ใช้เลือก ก่อนส่งเข้าหน้าครอป
+ *
+ * ย่อรูป 12 ล้านพิกเซลจากมือถือลงก่อน ไม่งั้นหน้าครอปกินแรมจนค้าง
+ * และการเขียนใหม่เป็น JPEG ทำให้ EXIF หายไปเอง หลังจากหมุนภาพให้ถูกด้านแล้ว
+ * ขั้นตอนครอปหลังจากนี้จึงไม่ต้องกังวลเรื่องการหมุนอีก
+ *
+ * คุณภาพสูงไว้ก่อนเพราะยังต้องเอาไปครอปแล้วบีบอีกรอบ
+ */
+export function normalizeForCrop(file: Blob, maxEdge = 1600): Promise<Blob> {
+  return shrinkToJpeg(file, {
+    maxEdge,
+    // ขั้นนี้ยังไม่ต้องคุมขนาดไฟล์ เดี๋ยวตอนครอปค่อยบีบให้เข้าเพดานจริง
+    maxBytes: Number.MAX_SAFE_INTEGER,
+    quality: 0.92,
+  });
 }

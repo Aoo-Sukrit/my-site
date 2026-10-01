@@ -11,61 +11,19 @@ import {
   avatarPath,
   avatarThumbPath,
 } from "@/lib/avatar-thumb";
-import { makeAvatarThumb } from "@/lib/image";
+import {
+  MAX_UPLOAD_BYTES,
+  makeAvatarThumb,
+  normalizeForCrop,
+  toJpegBlob,
+} from "@/lib/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 import ImageCropper, { CROP_ASPECT } from "./image-cropper";
 import { saveAvatarUrlAction } from "./actions";
 
-/** เพดานของบัคเก็ตคือ 500KB เผื่อระยะไว้หน่อย */
-const MAX_BYTES = 450_000;
 /** ด้านกว้างของไฟล์ที่อัปจริง 3:4 จึงได้ 720x960 */
 const OUTPUT_WIDTH = 720;
-/** ย่อรูปต้นทางก่อนส่งเข้าหน้าครอป กันรูป 12 ล้านพิกเซลจากมือถือกินแรมจนค้าง */
-const SOURCE_MAX_EDGE = 1600;
-
-async function toJpegBlob(canvas: HTMLCanvasElement, quality: number) {
-  return new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, "image/jpeg", quality);
-  });
-}
-
-/**
- * แปลงไฟล์ที่เลือกให้เป็น JPEG ที่ "ตรงไปตรงมา" ก่อนเข้าหน้าครอป
- *
- * imageOrientation: "from-image" สำคัญมากสำหรับรูปจากมือถือ ข้อมูลการหมุน
- * อยู่ใน EXIF ไม่ใช่ในพิกเซล ถ้าไม่สั่งตรงนี้ รูปแนวตั้งจะกลายเป็นนอนตะแคง
- * พอวาดลง canvas แล้ว export ใหม่ EXIF จะหายไปเลย ขั้นตอนครอปหลังจากนี้
- * จึงไม่ต้องกังวลเรื่องการหมุนอีก
- */
-async function normalizeSource(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file, {
-    imageOrientation: "from-image",
-  });
-
-  try {
-    const scale = Math.min(
-      1,
-      SOURCE_MAX_EDGE / Math.max(bitmap.width, bitmap.height),
-    );
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("เบราว์เซอร์นี้จัดการรูปให้ไม่ได้");
-    context.drawImage(bitmap, 0, 0, width, height);
-
-    const blob = await toJpegBlob(canvas, 0.92);
-    if (!blob) throw new Error("อ่านรูปนี้ไม่ได้ ลองเลือกรูปอื่น");
-    return blob;
-  } finally {
-    bitmap.close();
-  }
-}
 
 /** ตัดตามกรอบที่ผู้ใช้เลือก แล้วไล่ลดคุณภาพ/ขนาดจนไม่เกินเพดาน */
 async function cropToJpeg(source: Blob, area: Area): Promise<Blob> {
@@ -97,7 +55,7 @@ async function cropToJpeg(source: Blob, area: Area): Promise<Blob> {
 
       for (const quality of [0.85, 0.7, 0.55, 0.42]) {
         const blob = await toJpegBlob(canvas, quality);
-        if (blob && blob.size <= MAX_BYTES) return blob;
+        if (blob && blob.size <= MAX_UPLOAD_BYTES) return blob;
       }
 
       width = Math.round(width * 0.75);
@@ -141,7 +99,7 @@ export default function AvatarUploader({
     setDone(false);
 
     try {
-      const blob = await normalizeSource(file);
+      const blob = await normalizeForCrop(file);
       setSource({ blob, url: URL.createObjectURL(blob) });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));

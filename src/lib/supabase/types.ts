@@ -301,3 +301,69 @@ export type ChallengeableMember = {
   avatar_url: string | null;
   total_km: string;
 };
+
+// ---------------------------------------------------------------------------
+//  ระบบโพสต์ (20261001140000_posts.sql)
+//  มาจากฟังก์ชัน security definer เท่านั้น ตาราง posts post_media
+//  post_sections ถูกปิดสิทธิ์ไว้หมด เพราะโพสต์แบบลิงก์ลับต้องไม่มีทางหลุด
+// ---------------------------------------------------------------------------
+
+export type PostSection = {
+  slug: string;
+  title: string;
+  kind: "blog" | "work" | "hobby";
+  intro: string | null;
+  cover_url: string | null;
+  position: number;
+  hidden: boolean;
+  /** จำนวนโพสต์ที่ "คนที่กำลังดูอยู่" เห็นได้ ไม่ใช่จำนวนทั้งหมด */
+  post_count: number;
+};
+
+/** รูปหรือวิดีโอหนึ่งชิ้น url ของรูปคือที่อยู่ไฟล์ในบัคเก็ต ไม่ใช่ URL เต็ม */
+export type PostMedia = {
+  id: string;
+  position: number;
+  kind: "image" | "youtube";
+  url: string | null;
+  youtube_id: string | null;
+  caption: string | null;
+  width: number | null;
+  height: number | null;
+  bytes: number | null;
+};
+
+/** หนึ่งการ์ดในฟีด มาจาก post_feed() ซึ่งไม่คืนโพสต์ลิงก์ลับเลย */
+export type PostCard = {
+  id: string;
+  title: string;
+  body: string;
+  section_slug: string;
+  section_title: string;
+  section_kind: "blog" | "work" | "hobby";
+  visibility: string;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+  media_count: number;
+  cover_kind: "image" | "youtube" | null;
+  cover_url: string | null;
+  cover_youtube: string | null;
+};
+
+/** โพสต์เต็ม มาจาก post_by_id() หรือ post_by_token() */
+export type PostDetail = {
+  id: string;
+  title: string;
+  body: string;
+  section_slug: string;
+  section_title: string;
+  section_kind: "blog" | "work" | "hobby";
+  visibility: string;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+  /** คืนเฉพาะแอดมิน หรือตอนเข้ามาทางลิงก์ลับ */
+  share_token: string | null;
+  media: PostMedia[];
+};
