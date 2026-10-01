@@ -409,3 +409,28 @@ export type RunningStats = {
   month_rank: number | null;
   months: { month: string; km: string }[] | null;
 };
+
+// ---------------------------------------------------------------------------
+//  หน้าแรก (20261002140000_home.sql)
+// ---------------------------------------------------------------------------
+
+export type HomeContent = {
+  eyebrow: string | null;
+  title: string | null;
+  subtitle: string | null;
+  intro: string | null;
+  /** บรรทัด "ช่วงนี้ทำอะไรอยู่" ว่างไว้ได้ หน้าเว็บซ่อนให้เอง */
+  now_line: string | null;
+  club_blurb: string | null;
+};
+
+/** ตัวเลขสดของคลับเดือนปัจจุบัน สำหรับการ์ดบนหน้าแรก */
+export type ClubSummary = {
+  round_month: string;
+  member_count: number;
+  total_km: string;
+  /** null เมื่อเดือนนี้ยังไม่มีใครกรอกผล */
+  leader_nickname: string | null;
+  leader_avatar_url: string | null;
+  leader_km: string | null;
+};

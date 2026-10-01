@@ -185,7 +185,11 @@ export default async function AboutPage() {
   );
   const [feature, ...rest] = ordered;
 
-  const hobbies = sections.filter((row) => row.kind === "hobby");
+  // ช่องที่ยังไม่มีโพสต์ขึ้นว่า "ยังว่าง" ซึ่งเป็นงานที่ค้างอยู่ของเจ้าของเว็บ
+  // ไม่ใช่ของที่คนอื่นควรเห็น แอดมินยังเห็นครบเพื่อกดเข้าไปเติม
+  const hobbies = sections.filter(
+    (row) => row.kind === "hobby" && (isAdmin || row.post_count > 0),
+  );
   const empty = aboutIsEmpty(profile);
 
   return (
