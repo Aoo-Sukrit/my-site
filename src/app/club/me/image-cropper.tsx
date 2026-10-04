@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 
-/**
- * สัดส่วนกรอบครอป ทรงสูงให้ใกล้เคียงช่องรูปในแก้วเบียร์บนโพเดียม
- * (ช่องในแก้วเป็น 9:17 ส่วนนี่เป็น 9:16 เผื่อไว้นิดหน่อยให้ slice กินขอบได้
- * โดยไม่ตัดอะไรสำคัญทิ้ง) ของเดิมเป็น 3:4 ซึ่งพอเอาไปใส่แก้วแล้วถูกซูมเยอะมาก
- */
-export const CROP_ASPECT = 9 / 16;
+import { CROP_ASPECT } from "@/lib/beer-mug";
 
 /**
  * ซูมออกได้ต่ำสุดเท่าไหร่

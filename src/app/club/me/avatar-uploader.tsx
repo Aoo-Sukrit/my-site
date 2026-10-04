@@ -11,6 +11,7 @@ import {
   avatarPath,
   avatarThumbPath,
 } from "@/lib/avatar-thumb";
+import { CROP_ASPECT } from "@/lib/beer-mug";
 import {
   MAX_UPLOAD_BYTES,
   makeAvatarThumb,
@@ -19,11 +20,11 @@ import {
 } from "@/lib/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-import ImageCropper, { CROP_ASPECT } from "./image-cropper";
+import ImageCropper from "./image-cropper";
 import { saveAvatarUrlAction } from "./actions";
 
-/** ด้านกว้างของไฟล์ที่อัปจริง 9:16 จึงได้ 608x1081 */
-const OUTPUT_WIDTH = 608;
+/** ด้านกว้างของไฟล์ที่อัปจริง 5:8 จึงได้ 672x1075 */
+const OUTPUT_WIDTH = 672;
 
 /**
  * สีที่เติมช่องว่างรอบรูป
