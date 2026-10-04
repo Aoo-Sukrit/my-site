@@ -5,25 +5,64 @@ import BeerMug from "@/components/club/beer-mug";
 import { formatKm, formatPercent } from "@/lib/date";
 import type { LeaderboardRow, PercentRow } from "@/lib/supabase/types";
 
-/** อันดับ 1 กลางและใหญ่กว่า ตามลำดับการวางแบบโพเดียมจริง 2 - 1 - 3 */
+/** ลำดับการวางแบบโพเดียมจริง ซ้าย 2 กลาง 1 ขวา 3 */
 const PODIUM_ORDER = [1, 0, 2] as const;
 
-function PodiumSlot({ row, first }: { row: LeaderboardRow; first: boolean }) {
+/**
+ * ความกว้างของแต่ละช่องเทียบกับที่ 1
+ *
+ * ที่ 1 เต็มคอลัมน์ ที่ 2 กับที่ 3 เล็กลงตามลำดับ ใช้ max-w ไม่ใช่คอลัมน์กว้าง
+ * ไม่เท่ากัน เพราะทั้งสามคอลัมน์ต้องกว้างเท่ากันไว้ให้ชื่อกับระยะข้างล่าง
+ * ไม่งั้นช่องแคบจะตัดคำชื่อทิ้งเร็วกว่าช่องอื่นทั้งที่ชื่อยาวพอๆ กัน
+ */
+const MUG_SCALE: Record<number, string> = {
+  1: "w-full",
+  2: "w-[80%]",
+  3: "w-[67%]",
+};
+
+/**
+ * แก้วหนึ่งใบบนเส้นเคาน์เตอร์
+ *
+ * ฐานแก้วเสมอกันเสมอ เพราะแถวแก้วเป็นแถวของตัวเองที่สูงตามแก้วใบที่ 1
+ * แล้วจัดชิดล่าง ส่วนชื่อ ระยะ และคำโปรยอยู่คนละแถวใต้เส้นเคาน์เตอร์
+ * คำโปรยจะยาวแค่ไหนก็ดันแก้วไม่ได้ เพราะอยู่คนละแถวกัน
+ *
+ * (ของเดิมเอาทุกอย่างไว้ในคอลัมน์เดียวแล้วใช้ items-end ตัวที่ไม่มีคำโปรย
+ * จึงเตี้ยกว่า พอจัดชิดล่างแก้วของคนนั้นเลยถูกดันต่ำลงกว่าเพื่อน)
+ */
+function PodiumMug({ row }: { row: LeaderboardRow }) {
   return (
-    <Link
-      href={`/club/member/${row.member_id}`}
-      className="block text-center transition-opacity hover:opacity-90"
-    >
+    <div className={`${MUG_SCALE[row.rank_no] ?? "w-full"} relative`}>
+      {row.rank_no === 1 ? <Spotlight /> : null}
       <BeerMug
         uid={row.member_id}
         src={row.avatar_url}
         nickname={row.nickname}
         rank={row.rank_no}
-        first={first}
       />
+    </div>
+  );
+}
 
+/**
+ * แสงสปอตไลต์จางๆ หลังแก้วที่ 1
+ * aria-hidden เพราะเป็นของประดับล้วน ไม่ได้บอกข้อมูลอะไรกับคนที่ใช้โปรแกรมอ่านจอ
+ */
+function Spotlight() {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute -inset-x-[35%] -top-[12%] bottom-0 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-club-gold)_0%,transparent_65%)] opacity-20"
+    />
+  );
+}
+
+function PodiumText({ row, first }: { row: LeaderboardRow; first: boolean }) {
+  return (
+    <>
       <p
-        className={`mt-2 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
+        className={`truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
       >
         {row.nickname}
       </p>
@@ -36,35 +75,86 @@ function PodiumSlot({ row, first }: { row: LeaderboardRow; first: boolean }) {
         <span className="text-xs font-normal text-muted"> กม.</span>
       </p>
       {row.caption ? (
-        // line-clamp-2 กันแคปชั่นยาวดันการ์ดสูงจนโพเดียมเบี้ยว
         <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">
           {row.caption}
         </p>
       ) : null}
-    </Link>
+    </>
   );
 }
 
 /**
  * โพเดียม 3 อันดับแรก
  *
- * คอลัมน์กลางกว้างกว่าอีกสองข้างเพื่อให้อันดับ 1 เด่น และใช้ grid สามคอลัมน์
- * ตายตัว ไม่ใช่ flex-wrap เพราะต้องอยู่แถวเดียวกันบนมือถือเสมอ ห้ามตกบรรทัด
- * items-end ทำให้ฐานของทั้งสามชิดกัน ได้ความรู้สึกเป็นแท่นโพเดียม
+ * โครงเป็นสองแถวซ้อนกัน แถวบนคือแก้ว แถวล่างคือตัวหนังสือ คั่นด้วยเส้นเคาน์เตอร์
+ * ทั้งสองแถวใช้ grid สามคอลัมน์เท่ากันและเรียงลำดับเดียวกัน ช่องที่ i ของสองแถว
+ * จึงตรงกันเสมอ ไม่ต้องพึ่งความสูงของเนื้อหาในการจัดแนว
+ *
+ * ใช้ grid ตายตัว ไม่ใช่ flex-wrap เพราะต้องอยู่แถวเดียวกันบนมือถือเสมอ
  */
 export function Podium({ top }: { top: LeaderboardRow[] }) {
   return (
-    <ul className="grid grid-cols-[1fr_1.3fr_1fr] items-end gap-2 sm:gap-4">
-      {PODIUM_ORDER.map((index) => {
-        const row = top[index];
-        if (!row) return <li key={index} aria-hidden />;
-        return (
-          <li key={row.member_id}>
-            <PodiumSlot row={row} first={index === 0} />
-          </li>
-        );
-      })}
-    </ul>
+    <PodiumFrame
+      slots={PODIUM_ORDER.map((index) => top[index] ?? null)}
+      mug={(row) => <PodiumMug row={row} />}
+      text={(row, first) => <PodiumText row={row} first={first} />}
+    />
+  );
+}
+
+/**
+ * โครงโพเดียมที่กระดานระยะรวมกับกระดาน % ใช้ร่วมกัน
+ *
+ * รับแถวมาเรียงตามตำแหน่งบนจอแล้ว (ซ้าย กลาง ขวา) ช่องว่างเป็น null ได้
+ * ตอนเดือนนั้นมีคนวิ่งไม่ถึงสามคน
+ */
+function PodiumFrame<Row extends { member_id: string; rank_no: number }>({
+  slots,
+  mug,
+  text,
+}: {
+  slots: (Row | null)[];
+  mug: (row: Row) => React.ReactNode;
+  text: (row: Row, first: boolean) => React.ReactNode;
+}) {
+  return (
+    <div>
+      {/* แถวแก้ว สูงตามแก้วใบที่สูงที่สุด แล้วจัดทุกใบชิดล่าง ฐานจึงเสมอกัน */}
+      <ul className="grid grid-cols-3 items-end gap-2 sm:gap-4">
+        {slots.map((row, index) =>
+          row ? (
+            <li key={row.member_id} className="flex justify-center">
+              {mug(row)}
+            </li>
+          ) : (
+            <li key={index} aria-hidden />
+          ),
+        )}
+      </ul>
+
+      {/* เส้นเคาน์เตอร์ที่แก้วทั้งสามใบวางอยู่ */}
+      <div
+        aria-hidden
+        className="h-1.5 rounded-full bg-club-line/70 sm:h-2"
+      />
+
+      <ul className="mt-2 grid grid-cols-3 gap-2 text-center sm:gap-4">
+        {slots.map((row, index) =>
+          row ? (
+            <li key={row.member_id} className="min-w-0">
+              <Link
+                href={`/club/member/${row.member_id}`}
+                className="block transition-opacity hover:opacity-90"
+              >
+                {text(row, row.rank_no === 1)}
+              </Link>
+            </li>
+          ) : (
+            <li key={index} aria-hidden />
+          ),
+        )}
+      </ul>
+    </div>
   );
 }
 
@@ -183,24 +273,13 @@ function adjustNote(row: PercentRow): string | null {
   return `ตั้งไว้ ${formatKm(row.base_km)} เพื่อนปรับเป็น ${formatKm(row.final_km)}`;
 }
 
-function PercentSlot({ row, first }: { row: PercentRow; first: boolean }) {
+function PercentText({ row, first }: { row: PercentRow; first: boolean }) {
   const note = adjustNote(row);
 
   return (
-    <Link
-      href={`/club/member/${row.member_id}`}
-      className="block text-center transition-opacity hover:opacity-90"
-    >
-      <BeerMug
-        uid={row.member_id}
-        src={row.avatar_url}
-        nickname={row.nickname}
-        rank={row.rank_no}
-        first={first}
-      />
-
+    <>
       <p
-        className={`mt-2 truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
+        className={`truncate font-medium ${first ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}
       >
         {row.nickname}
       </p>
@@ -225,23 +304,27 @@ function PercentSlot({ row, first }: { row: PercentRow; first: boolean }) {
           {row.caption}
         </p>
       ) : null}
-    </Link>
+    </>
   );
 }
 
 export function PercentPodium({ top }: { top: PercentRow[] }) {
   return (
-    <ul className="grid grid-cols-[1fr_1.3fr_1fr] items-end gap-2 sm:gap-4">
-      {PODIUM_ORDER.map((index) => {
-        const row = top[index];
-        if (!row) return <li key={index} aria-hidden />;
-        return (
-          <li key={row.member_id}>
-            <PercentSlot row={row} first={index === 0} />
-          </li>
-        );
-      })}
-    </ul>
+    <PodiumFrame
+      slots={PODIUM_ORDER.map((index) => top[index] ?? null)}
+      mug={(row) => (
+        <div className={`${MUG_SCALE[row.rank_no] ?? "w-full"} relative`}>
+          {row.rank_no === 1 ? <Spotlight /> : null}
+          <BeerMug
+            uid={row.member_id}
+            src={row.avatar_url}
+            nickname={row.nickname}
+            rank={row.rank_no}
+          />
+        </div>
+      )}
+      text={(row, first) => <PercentText row={row} first={first} />}
+    />
   );
 }
 

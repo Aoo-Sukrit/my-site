@@ -3,16 +3,34 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 
-export const CROP_ASPECT = 3 / 4;
+/**
+ * สัดส่วนกรอบครอป ทรงสูงให้ใกล้เคียงช่องรูปในแก้วเบียร์บนโพเดียม
+ * (ช่องในแก้วเป็น 9:17 ส่วนนี่เป็น 9:16 เผื่อไว้นิดหน่อยให้ slice กินขอบได้
+ * โดยไม่ตัดอะไรสำคัญทิ้ง) ของเดิมเป็น 3:4 ซึ่งพอเอาไปใส่แก้วแล้วถูกซูมเยอะมาก
+ */
+export const CROP_ASPECT = 9 / 16;
 
 /**
- * หน้าต่างครอปรูป ล็อกสัดส่วน 3:4 แนวตั้ง
+ * ซูมออกได้ต่ำสุดเท่าไหร่
+ *
+ * react-easy-crop นับ zoom = 1 ว่าคือพอดีกรอบแบบไม่มีที่ว่าง (cover)
+ * รูปแนวนอนจัดๆ อย่างรูปหมู่ ถ้าซูมต่ำสุดได้แค่ 1 จะเห็นแค่แถบกลางรูป
+ * ปลดให้ซูมออกได้ถึง 0.3 พร้อมปิด restrictPosition คนจึงเลื่อนรูปจนเห็นทั้งใบได้
+ * ส่วนที่ว่างรอบรูปจะถูกเติมสีตอนตัดจริง
+ */
+export const CROP_MIN_ZOOM = 0.3;
+const CROP_MAX_ZOOM = 4;
+
+/**
+ * หน้าต่างครอปรูป ล็อกสัดส่วนแนวตั้ง
  *
  * react-easy-crop รับมือ pinch zoom กับการลากด้วยนิ้วให้เองแล้ว
  * และฉีด CSS ของตัวเองเข้ามาอัตโนมัติ เลยไม่ต้อง import ไฟล์ css แยก
  *
  * คืนค่าเป็น croppedAreaPixels ซึ่งเป็นพิกัดบนรูปต้นฉบับ
  * คนเรียกเอาไปตัดจริงบน canvas อีกที
+ * พอปิด restrictPosition แล้ว พิกัดนั้นออกนอกรูปได้ (ติดลบหรือเกินขนาดรูป)
+ * ฝั่งที่เอาไปตัดต้องเผื่อไว้ด้วย
  */
 export default function ImageCropper({
   src,
@@ -65,9 +83,9 @@ export default function ImageCropper({
           crop={crop}
           zoom={zoom}
           aspect={CROP_ASPECT}
-          minZoom={1}
-          maxZoom={4}
-          restrictPosition
+          minZoom={CROP_MIN_ZOOM}
+          maxZoom={CROP_MAX_ZOOM}
+          restrictPosition={false}
           showGrid
           onCropChange={setCrop}
           onZoomChange={setZoom}
@@ -81,15 +99,15 @@ export default function ImageCropper({
 
       <div className="space-y-4 bg-background px-5 pt-4 pb-6">
         <p className="text-center text-sm text-muted">
-          ลากเพื่อเลื่อน จีบสองนิ้วเพื่อซูม
+          ลากเพื่อเลื่อน จีบสองนิ้วเพื่อซูม · ซูมออกได้จนเห็นรูปทั้งใบ
         </p>
 
         <label className="flex items-center gap-3">
           <span className="text-xs text-muted">ซูม</span>
           <input
             type="range"
-            min={1}
-            max={4}
+            min={CROP_MIN_ZOOM}
+            max={CROP_MAX_ZOOM}
             step={0.05}
             value={zoom}
             onChange={(event) => setZoom(Number(event.target.value))}

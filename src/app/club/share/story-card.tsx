@@ -1,7 +1,7 @@
 import {
-  MUG_BADGE,
-  MUG_BADGE_FONT,
+  MUG_BEER,
   MUG_BODY_PATH,
+  MUG_BUBBLES,
   MUG_FOAM_PATH,
   MUG_HANDLE_PATH,
   MUG_HANDLE_STROKE,
@@ -9,7 +9,11 @@ import {
   MUG_INNER,
   MUG_PHOTO_BOX,
   MUG_PRINT,
-  MUG_SHADOW_OFFSET,
+  MUG_RIBBON_COLOR,
+  MUG_RIBBON_FONT,
+  MUG_RIBBON_LABEL,
+  MUG_RIBBON_PATH,
+  MUG_RIBBON_TEXT,
   MUG_STROKE,
   MUG_VIEW,
 } from "@/lib/beer-mug";
@@ -70,10 +74,39 @@ type ListTier = {
 
 const COLUMN_GAP = 28;
 
+/** ช่องไฟระหว่างช่องโพเดียม ใช้ทั้งแถวแก้วและแถวตัวหนังสือ จะได้ตรงแนวกัน */
+const PODIUM_GAP = 20;
+
+/** เส้นเคาน์เตอร์ที่แก้ววางอยู่ สีเดียวกับที่ลอกมาจาก mockup */
+const COUNTER = "#8a6a45";
+
+/** ด้านของรูปวงแสงหลังแก้วที่ 1 */
+const SPOTLIGHT_SIZE = 620;
+
+/**
+ * วงแสงจางๆ หลังแก้วที่ 1
+ *
+ * satori ทำ radial-gradient ใน CSS ไม่ได้ จึงวาดเป็น SVG แล้วยัดเป็น data URI
+ * ให้ <img> ใบหนึ่ง วิธีเดียวกับตัวแก้ว คำนวณครั้งเดียวตอนโหลดโมดูล
+ * ไม่ต้องสร้างใหม่ทุกครั้งที่มีคนขอรูป
+ */
+const SPOTLIGHT_URI = `data:image/svg+xml;base64,${Buffer.from(
+  [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">`,
+    `<defs><radialGradient id="g" cx="50%" cy="50%" r="50%">`,
+    `<stop offset="0%" stop-color="#d8890c" stop-opacity="0.85"/>`,
+    `<stop offset="55%" stop-color="#d8890c" stop-opacity="0.28"/>`,
+    `<stop offset="100%" stop-color="#d8890c" stop-opacity="0"/>`,
+    `</radialGradient></defs>`,
+    `<rect width="100" height="100" fill="url(#g)"/>`,
+    `</svg>`,
+  ].join(""),
+  "utf8",
+).toString("base64")}`;
+
 type Density = {
   logo: number;
   mugFirst: number;
-  mugSide: number;
   podiumNameFirst: number;
   podiumNameSide: number;
   podiumValueFirst: number;
@@ -173,8 +206,7 @@ function pickDensity(rowCount: number): Density {
   if (rowCount <= 8) {
     return {
       logo: 168,
-      mugFirst: 360,
-      mugSide: 276,
+      mugFirst: 300,
       podiumNameFirst: 34,
       podiumNameSide: 28,
       podiumValueFirst: 38,
@@ -187,8 +219,7 @@ function pickDensity(rowCount: number): Density {
   if (rowCount <= 16) {
     return {
       logo: 132,
-      mugFirst: 300,
-      mugSide: 230,
+      mugFirst: 262,
       podiumNameFirst: 30,
       podiumNameSide: 25,
       podiumValueFirst: 34,
@@ -200,8 +231,7 @@ function pickDensity(rowCount: number): Density {
 
   return {
     logo: 104,
-    mugFirst: 250,
-    mugSide: 192,
+    mugFirst: 222,
     podiumNameFirst: 26,
     podiumNameSide: 22,
     podiumValueFirst: 30,
@@ -252,27 +282,34 @@ function usableAvatar(avatar: string | null): string | null {
  * ธรรมดาใบหนึ่ง ไม่ต้องเดินเข้าไปในต้นไม้ SVG เลย แล้ว resvg เป็นคนวาด
  * clipPath กับ preserveAspectRatio ให้ ซึ่งมันทำได้ครบและหน้าตาเหมือนกันเป๊ะ
  */
-function mugSvg(avatar: string | null, first: boolean): string {
-  const shadow = first ? MUG_PRINT.goldShadow : MUG_PRINT.inkShadow;
+function mugSvg(avatar: string | null, rankNo: number): string {
   const box = MUG_PHOTO_BOX;
+  const ribbon = MUG_RIBBON_COLOR[rankNo];
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"`,
     ` viewBox="0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}" width="${MUG_VIEW.width}" height="${MUG_VIEW.height}">`,
-    `<defs><clipPath id="body"><path d="${MUG_BODY_PATH}"/></clipPath></defs>`,
-    `<g transform="translate(${MUG_SHADOW_OFFSET},${MUG_SHADOW_OFFSET})" fill="${shadow}" stroke="${shadow}">`,
-    `<path d="${MUG_HANDLE_PATH}" fill="none" stroke-width="${MUG_HANDLE_STROKE}"/>`,
-    `<path d="${MUG_FOAM_PATH}"/>`,
-    `<path d="${MUG_BODY_PATH}"/>`,
-    `</g>`,
+    `<defs><clipPath id="body"><path d="${MUG_BODY_PATH}"/></clipPath>`,
+    `<linearGradient id="beer" x1="0" y1="0" x2="0" y2="1">`,
+    `<stop offset="0%" stop-color="${MUG_BEER.top}"/>`,
+    `<stop offset="55%" stop-color="${MUG_BEER.mid}"/>`,
+    `<stop offset="100%" stop-color="${MUG_BEER.bottom}"/>`,
+    `</linearGradient></defs>`,
     `<path d="${MUG_HANDLE_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_HANDLE_STROKE}"/>`,
-    `<path d="${MUG_BODY_PATH}" fill="${MUG_PRINT.emptyFill}"/>`,
     avatar
-      ? `<image xlink:href="${avatar}" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" preserveAspectRatio="xMidYMid slice" clip-path="url(#body)"/>`
-      : ``,
+      ? `<image xlink:href="${avatar}" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" preserveAspectRatio="xMidYMin slice" clip-path="url(#body)"/>`
+      : [
+          `<path d="${MUG_BODY_PATH}" fill="url(#beer)"/>`,
+          ...MUG_BUBBLES.map(
+            (bubble) =>
+              `<circle cx="${bubble.cx}" cy="${bubble.cy}" r="${bubble.r}" fill="${MUG_BEER.bubble}" opacity="0.55" clip-path="url(#body)"/>`,
+          ),
+        ].join(""),
     `<path d="${MUG_BODY_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
     `<path d="${MUG_FOAM_PATH}" fill="${MUG_PRINT.foam}" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
-    `<circle cx="${MUG_BADGE.cx}" cy="${MUG_BADGE.cy}" r="${MUG_BADGE.r}" fill="${shadow}"/>`,
+    ribbon
+      ? `<path d="${MUG_RIBBON_PATH}" fill="${ribbon.fill}" stroke="${MUG_PRINT.outline}" stroke-width="2.5" stroke-linejoin="round"/>`
+      : ``,
     `</svg>`,
   ].join("");
 }
@@ -284,21 +321,14 @@ function mugSvg(avatar: string | null, first: boolean): string {
  * เป็น div วางทับ เพราะ <text> ใน svg ทำให้ satori พังเหมือนกัน และวิธีนี้
  * ยังได้ฟอนต์ไทยที่โหลดไว้ด้วย ถ้าฝังใน svg resvg จะไม่มีฟอนต์ให้ใช้
  */
-function StoryMug({
-  entry,
-  width,
-  first,
-}: {
-  entry: StoryEntry;
-  width: number;
-  first: boolean;
-}) {
+function StoryMug({ entry, width }: { entry: StoryEntry; width: number }) {
   const avatar = usableAvatar(entry.avatar);
   const height = mugHeight(width);
   const scale = width / MUG_VIEW.width;
-  const badgeSize = MUG_BADGE.r * 2 * scale;
+  const ribbon = MUG_RIBBON_COLOR[entry.rankNo];
+  const label = MUG_RIBBON_LABEL[entry.rankNo];
   const uri = `data:image/svg+xml;base64,${Buffer.from(
-    mugSvg(avatar, first),
+    mugSvg(avatar, entry.rankNo),
     "utf8",
   ).toString("base64")}`;
 
@@ -318,7 +348,7 @@ function StoryMug({
             height: MUG_INNER.height * scale,
             alignItems: "center",
             justifyContent: "center",
-            color: MUG_PRINT.emptyText,
+            color: MUG_BEER.initial,
             fontFamily: "PlexThai",
             fontWeight: 600,
             fontSize: Math.round(MUG_INITIAL_FONT * scale),
@@ -328,24 +358,26 @@ function StoryMug({
         </div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          position: "absolute",
-          left: (MUG_BADGE.cx - MUG_BADGE.r) * scale,
-          top: (MUG_BADGE.cy - MUG_BADGE.r) * scale,
-          width: badgeSize,
-          height: badgeSize,
-          alignItems: "center",
-          justifyContent: "center",
-          color: MUG_PRINT.badgeText,
-          fontFamily: "PlexThai",
-          fontWeight: 600,
-          fontSize: Math.round(MUG_BADGE_FONT * scale),
-        }}
-      >
-        {entry.rankNo}
-      </div>
+      {ribbon && label ? (
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            left: MUG_RIBBON_TEXT.x * scale,
+            top: MUG_RIBBON_TEXT.y * scale,
+            width: MUG_RIBBON_TEXT.width * scale,
+            height: MUG_RIBBON_TEXT.height * scale,
+            alignItems: "center",
+            justifyContent: "center",
+            color: ribbon.text,
+            fontFamily: "PlexThai",
+            fontWeight: 600,
+            fontSize: Math.round(MUG_RIBBON_FONT * scale),
+          }}
+        >
+          {label}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -436,6 +468,9 @@ function Photo({
           height,
           borderRadius: radius,
           objectFit: "cover",
+          // รูปโปรไฟล์เป็นทรงสูง 9:16 ส่วนช่องในแถวเตี้ยกว่านั้นมาก
+          // ถ้าจัดกลางตามค่าปกติ หัวกับไหล่จะโดนตัดทิ้งเหลือแต่ลำตัว
+          objectPosition: "top",
         }}
       />
     );
@@ -509,7 +544,69 @@ function SquarePodiumPhoto({
   );
 }
 
-function PodiumSlot({
+/**
+ * ความกว้างของแก้วแต่ละช่องเทียบกับที่ 1
+ * ที่ 1 เต็มช่อง ที่ 2 กับที่ 3 เล็กลงตามลำดับ ชุดเดียวกับฝั่งเว็บ
+ */
+const MUG_SCALE: Record<number, number> = { 1: 1, 2: 0.8, 3: 0.67 };
+
+/**
+ * ความกว้างของช่องหนึ่งช่อง ใช้ทั้งแถวแก้วและแถวตัวหนังสือ
+ * สองแถวต้องเรียกตัวนี้เหมือนกัน ช่องที่ i ของสองแถวจึงตรงแนวกันเสมอ
+ */
+function podiumSlotWidth(
+  entry: StoryEntry,
+  first: boolean,
+  podiumStyle: PodiumStyle,
+  density: Density,
+): number {
+  if (podiumStyle === "square") return first ? 270 : 210;
+  return Math.round(density.mugFirst * (MUG_SCALE[entry.rankNo] ?? 1));
+}
+
+/**
+ * ช่องหนึ่งช่องในแถวแก้ว
+ *
+ * ทุกช่องกว้างเท่ากัน (เท่ากับแก้วใบใหญ่สุด) แล้วเอาแก้วไปวางกลางช่อง
+ * แถวนี้สูงตามแก้วใบที่สูงที่สุดและจัดชิดล่าง ฐานแก้วทั้งสามจึงเสมอกันเสมอ
+ * ไม่ว่าใครจะมีคำโปรยยาวแค่ไหน เพราะคำโปรยไปอยู่อีกแถวหนึ่งข้างล่าง
+ */
+function PodiumMugCell({
+  entry,
+  first,
+  podiumStyle,
+  density,
+}: {
+  entry: StoryEntry;
+  first: boolean;
+  podiumStyle: PodiumStyle;
+  density: Density;
+}) {
+  const width = podiumSlotWidth(entry, first, podiumStyle, density);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        width,
+        justifyContent: "center",
+        alignItems: "flex-end",
+        // แบบ square มีป้ายเลขอันดับห้อยใต้รูป 26px ถ้าไม่เว้นที่ให้
+        // ป้ายจะไปคร่อมเส้นเคาน์เตอร์จนอ่านเลขไม่ออก
+        paddingBottom: podiumStyle === "square" ? 30 : 0,
+      }}
+    >
+      {podiumStyle === "square" ? (
+        <SquarePodiumPhoto entry={entry} width={width} first={first} />
+      ) : (
+        <StoryMug entry={entry} width={width} />
+      )}
+    </div>
+  );
+}
+
+/** ชื่อ ตัวเลข และคำโปรย ของหนึ่งช่อง อยู่ใต้เส้นเคาน์เตอร์ */
+function PodiumTextCell({
   entry,
   first,
   mode,
@@ -522,14 +619,7 @@ function PodiumSlot({
   podiumStyle: PodiumStyle;
   density: Density;
 }) {
-  const width =
-    podiumStyle === "square"
-      ? first
-        ? 270
-        : 210
-      : first
-        ? density.mugFirst
-        : density.mugSide;
+  const width = podiumSlotWidth(entry, first, podiumStyle, density);
   const nameSize = first ? density.podiumNameFirst : density.podiumNameSide;
   const valueSize = first ? density.podiumValueFirst : density.podiumValueSide;
   const caption = density.showPodiumCaption
@@ -546,29 +636,13 @@ function PodiumSlot({
         width,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          height: mugHeight(density.mugFirst),
-          alignItems: "flex-end",
-        }}
-      >
-        {podiumStyle === "square" ? (
-          <SquarePodiumPhoto entry={entry} width={width} first={first} />
-        ) : (
-          <StoryMug entry={entry} width={width} first={first} />
-        )}
-      </div>
-
       {/* กันที่ให้ชื่อสองบรรทัดเสมอ ชื่อยาวอย่าง "angkuji run slow" จะได้ไม่
           ดันบรรทัดระยะของช่องนั้นให้ต่ำกว่าอีกสองช่อง แถวตัวเลขจึงตรงแนวกัน */}
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "center",
           justifyContent: "center",
-          // แบบ square มีป้ายอันดับห้อยใต้รูป 26px ต้องเว้นที่ให้
-          marginTop: podiumStyle === "square" ? 38 : 14,
           // ตรึงความสูงด้วยฟอนต์ตัวใหญ่สุดเสมอ ไม่ใช่ตามขนาดของช่องตัวเอง
           // ไม่งั้นช่องอันดับ 1 จะดันบรรทัดตัวเลขลงไปต่ำกว่าอีกสองช่อง
           height: Math.round(density.podiumNameFirst * 1.22 * 2),
@@ -826,6 +900,15 @@ export function StoryCard({
     podium[2] ? { entry: podium[2], first: false } : null,
   ].filter((slot) => slot !== null);
 
+  // ความกว้างรวมของโพเดียม ใช้วางเส้นเคาน์เตอร์กับจัดวงแสงให้ตรงกลาง
+  const podiumWidth =
+    arranged.reduce(
+      (sum, slot) =>
+        sum + podiumSlotWidth(slot.entry, slot.first, podiumStyle, density),
+      0,
+    ) +
+    Math.max(0, arranged.length - 1) * PODIUM_GAP;
+
   return (
     <div
       style={{
@@ -913,23 +996,85 @@ export function StoryCard({
           style={{
             display: "flex",
             flexShrink: 0,
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "center",
+            flexDirection: "column",
+            alignItems: "center",
             marginTop: 30,
-            gap: 20,
+            position: "relative",
           }}
         >
-          {arranged.map((slot) => (
-            <PodiumSlot
-              key={slot.entry.memberId}
-              entry={slot.entry}
-              first={slot.first}
-              mode={mode}
-              podiumStyle={podiumStyle}
-              density={density}
+          {/* แสงสปอตไลต์หลังแก้วที่ 1
+              satori ทำ radial-gradient ไม่ได้ จึงใช้รูปที่วาดมาแล้วเป็นวงแสง
+              วางไว้ก่อนแก้วเพื่อให้อยู่ข้างหลัง ไม่ได้ใช้ zIndex เพราะ satori
+              เรียงตามลำดับที่เขียนเท่านั้น */}
+          {podiumStyle === "mug" ? (
+            // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+            <img
+              src={SPOTLIGHT_URI}
+              width={SPOTLIGHT_SIZE}
+              height={SPOTLIGHT_SIZE}
+              style={{
+                position: "absolute",
+                left: Math.round((podiumWidth - SPOTLIGHT_SIZE) / 2),
+                top: -Math.round(SPOTLIGHT_SIZE * 0.12),
+                width: SPOTLIGHT_SIZE,
+                height: SPOTLIGHT_SIZE,
+                opacity: 0.5,
+              }}
             />
-          ))}
+          ) : null}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              gap: PODIUM_GAP,
+            }}
+          >
+            {arranged.map((slot) => (
+              <PodiumMugCell
+                key={slot.entry.memberId}
+                entry={slot.entry}
+                first={slot.first}
+                podiumStyle={podiumStyle}
+                density={density}
+              />
+            ))}
+          </div>
+
+          {/* เส้นเคาน์เตอร์ที่แก้วทั้งสามใบวางอยู่ */}
+          <div
+            style={{
+              display: "flex",
+              width: podiumWidth,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: COUNTER,
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              marginTop: 14,
+              gap: PODIUM_GAP,
+            }}
+          >
+            {arranged.map((slot) => (
+              <PodiumTextCell
+                key={slot.entry.memberId}
+                entry={slot.entry}
+                first={slot.first}
+                mode={mode}
+                podiumStyle={podiumStyle}
+                density={density}
+              />
+            ))}
+          </div>
         </div>
       )}
 

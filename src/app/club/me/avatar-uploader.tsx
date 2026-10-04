@@ -22,10 +22,26 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import ImageCropper, { CROP_ASPECT } from "./image-cropper";
 import { saveAvatarUrlAction } from "./actions";
 
-/** ด้านกว้างของไฟล์ที่อัปจริง 3:4 จึงได้ 720x960 */
-const OUTPUT_WIDTH = 720;
+/** ด้านกว้างของไฟล์ที่อัปจริง 9:16 จึงได้ 608x1081 */
+const OUTPUT_WIDTH = 608;
 
-/** ตัดตามกรอบที่ผู้ใช้เลือก แล้วไล่ลดคุณภาพ/ขนาดจนไม่เกินเพดาน */
+/**
+ * สีที่เติมช่องว่างรอบรูป
+ *
+ * พอปลดให้ซูมออกจนเห็นรูปทั้งใบได้ กรอบครอปจะเลยขอบรูปออกไปได้
+ * ถ้าไม่เติมสีไว้ก่อน ส่วนนั้นจะเป็นพื้นโปร่งใส ซึ่งพอบันทึกเป็น JPEG
+ * (ซึ่งไม่มีช่องโปร่งใส) จะกลายเป็นสีดำสนิท
+ * ใช้สีครีมอ่อนให้กลืนกับพื้นเว็บและพื้นรูปสตอรี่
+ */
+const CROP_BACKDROP = "#f0e4d4";
+
+/**
+ * ตัดตามกรอบที่ผู้ใช้เลือก แล้วไล่ลดคุณภาพ/ขนาดจนไม่เกินเพดาน
+ *
+ * area มาจาก react-easy-crop ที่ปิด restrictPosition ไว้ พิกัดจึงออกนอกรูปได้
+ * ทั้งติดลบและเกินขนาดรูป เลยต้องหาส่วนที่ซ้อนกับรูปจริงเองแล้ววาดเฉพาะส่วนนั้น
+ * ลงตำแหน่งที่ถูกต้องบนผืนผ้าใบ ไม่ปล่อยให้ drawImage เดาเอง
+ */
 async function cropToJpeg(source: Blob, area: Area): Promise<Blob> {
   const bitmap = await createImageBitmap(source);
 
@@ -41,17 +57,35 @@ async function cropToJpeg(source: Blob, area: Area): Promise<Blob> {
 
       const context = canvas.getContext("2d");
       if (!context) throw new Error("เบราว์เซอร์นี้ครอปรูปให้ไม่ได้");
-      context.drawImage(
-        bitmap,
-        area.x,
-        area.y,
-        area.width,
-        area.height,
-        0,
-        0,
-        width,
-        height,
-      );
+
+      context.fillStyle = CROP_BACKDROP;
+      context.fillRect(0, 0, width, height);
+
+      // ส่วนที่กรอบครอปกับตัวรูปซ้อนกันจริง ในพิกัดของรูปต้นฉบับ
+      const sx = Math.max(0, area.x);
+      const sy = Math.max(0, area.y);
+      const sRight = Math.min(bitmap.width, area.x + area.width);
+      const sBottom = Math.min(bitmap.height, area.y + area.height);
+      const sWidth = sRight - sx;
+      const sHeight = sBottom - sy;
+
+      if (sWidth > 0 && sHeight > 0) {
+        // แปลงพิกัดนั้นไปเป็นตำแหน่งบนผืนผ้าใบตามอัตราย่อขยายเดียวกัน
+        const scaleX = width / area.width;
+        const scaleY = height / area.height;
+
+        context.drawImage(
+          bitmap,
+          sx,
+          sy,
+          sWidth,
+          sHeight,
+          (sx - area.x) * scaleX,
+          (sy - area.y) * scaleY,
+          sWidth * scaleX,
+          sHeight * scaleY,
+        );
+      }
 
       for (const quality of [0.85, 0.7, 0.55, 0.42]) {
         const blob = await toJpegBlob(canvas, quality);

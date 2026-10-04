@@ -61,11 +61,13 @@ export function PortraitAvatar({
       className={`aspect-[3/4] w-full overflow-hidden rounded-2xl bg-accent-soft ${className}`}
     >
       {src ? (
+        // object-top เพราะรูปโปรไฟล์เป็นทรงสูงกว่ากรอบนี้ (ครอปมา 9:16)
+        // ถ้าจัดกลางตามค่าปกติ หัวกับไหล่จะโดนตัดทิ้ง
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt={`รูปโปรไฟล์ของ ${nickname}`}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover object-top"
         />
       ) : (
         <span
