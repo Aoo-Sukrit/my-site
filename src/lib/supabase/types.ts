@@ -198,6 +198,7 @@ export const RUN_SOURCES = [
   "Strava",
   "Suunto",
   "COROS",
+  "Apple Watch",
   "Mi Fitness",
   "Samsung Health",
   "อื่นๆ",
