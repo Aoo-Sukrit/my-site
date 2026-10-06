@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { readSupabaseEnv } from "./supabase/env";
 import { createSupabaseServerClient } from "./supabase/server";
@@ -24,8 +25,15 @@ export const CLUB_ROUTES = {
  *
  * ใช้ getUser() ไม่ใช่ getSession() เพราะ getUser() ไปถาม Supabase จริงว่า
  * token ยังใช้ได้ไหม ส่วน getSession() เชื่อคุกกี้ในเครื่องซึ่งปลอมได้
+ *
+ * ห่อด้วย cache() ของ React เพื่อให้หนึ่ง request ถามจริงแค่ครั้งเดียว
+ * ตั้งแต่มี layout ของคลับที่ต้องรู้ว่าใครล็อกอินอยู่เพื่อวาดแถบเมนู
+ * ทั้ง layout และตัวหน้าต่างก็เรียกตัวนี้ ถ้าไม่ห่อไว้จะกลายเป็นถาม Supabase
+ * สองรอบและยิง query ตาราง profiles สองครั้งต่อการเปิดหนึ่งหน้า
+ *
+ * cache() ผูกกับ request เดียวเท่านั้น ไม่ได้เก็บข้ามคนหรือข้ามคำขอ
  */
-export async function getViewer(): Promise<Viewer | null> {
+export const getViewer = cache(async function getViewer(): Promise<Viewer | null> {
   // ยังไม่ได้ตั้งค่า Supabase ถือว่ายังไม่ล็อกอิน จะได้เด้งไปหน้าล็อกอิน
   // ซึ่งอธิบายปัญหาได้ แทนที่จะโยน 500 ใส่หน้าเปล่าๆ
   if (readSupabaseEnv().missing.length > 0) return null;
@@ -49,7 +57,7 @@ export async function getViewer(): Promise<Viewer | null> {
   if (!profile) return null;
 
   return { userId: user.id, email: user.email ?? null, profile };
-}
+})
 
 /** ต้องล็อกอินแล้ว ไม่งั้นเด้งไปหน้าล็อกอิน */
 export async function requireViewer(): Promise<Viewer> {

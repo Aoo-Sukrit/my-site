@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import Alert from "@/components/club/alert";
 import ClubLogo from "@/components/club-logo";
-import { SubmitButton } from "@/components/club/form-controls";
 import { requireApproved } from "@/lib/auth";
 import {
   getRoundChallenges,
@@ -27,7 +26,6 @@ import { getRoundPrizes } from "@/lib/prizes";
 import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
-import { logoutAction } from "./actions";
 import MonthPicker from "./month-picker";
 import RewardsTab from "./rewards";
 import {
@@ -73,7 +71,9 @@ async function lastMonthSummary(monthKey: string) {
 }
 
 export default async function ClubPage(props: PageProps<"/club">) {
-  const viewer = await requireApproved();
+  // ยังต้องเรียกเพื่อกันคนที่ยังไม่ได้รับอนุมัติ ถึงจะไม่ได้ใช้ค่าที่คืนมาแล้ว
+  // หลังย้ายเมนูท้ายหน้าขึ้นไปอยู่แถบบน
+  await requireApproved();
   const params = await props.searchParams;
 
   const boardTab =
@@ -315,46 +315,6 @@ export default async function ClubPage(props: PageProps<"/club">) {
       <p className="text-center text-[11px] tracking-[0.2em] text-muted sm:text-xs">
         GOOD PACE · GOOD PLACE · GOOD PEOPLE
       </p>
-
-      <section className="flex flex-wrap justify-center gap-3 border-t border-border pt-6">
-        <Link
-          href="/club/target"
-          className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
-        >
-          เป้าเดือนนี้
-        </Link>
-        <Link
-          href={`/club/member/${viewer.userId}`}
-          className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
-        >
-          ผลวิ่งของฉัน
-        </Link>
-        <Link
-          href={isCurrentMonth ? "/club/share" : `/club/share?month=${selectedMonth}`}
-          className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
-        >
-          รูปลงสตอรี่
-        </Link>
-        <Link
-          href="/club/me"
-          className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
-        >
-          โปรไฟล์ของฉัน
-        </Link>
-        {viewer.profile.is_admin ? (
-          <Link
-            href="/club/admin"
-            className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
-          >
-            จัดการสมาชิก
-          </Link>
-        ) : null}
-        <form action={logoutAction}>
-          <SubmitButton variant="ghost" pendingLabel="กำลังออก…">
-            ออกจากระบบ
-          </SubmitButton>
-        </form>
-      </section>
 
       {isCurrentMonth ? <LogRunButton /> : null}
     </div>
