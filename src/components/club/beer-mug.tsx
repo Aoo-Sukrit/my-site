@@ -41,19 +41,20 @@ export default function BeerMug({
   uid: string;
   src: string | null;
   nickname: string;
-  rank: number;
+  /** null เมื่อใช้นอกโพเดียม เช่นบนหน้าโปรไฟล์ จะไม่มีริบบิ้นอันดับติดมา */
+  rank: number | null;
 }) {
   const clipId = `mug-body-${uid}`;
   const beerId = `mug-beer-${uid}`;
-  const ribbon = MUG_RIBBON_COLOR[rank];
-  const label = MUG_RIBBON_LABEL[rank];
+  const ribbon = rank === null ? undefined : MUG_RIBBON_COLOR[rank];
+  const label = rank === null ? undefined : MUG_RIBBON_LABEL[rank];
 
   return (
     <svg
       viewBox={`0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}`}
       className="block h-auto w-full text-foreground"
       role="img"
-      aria-label={`อันดับ ${rank} ${nickname}`}
+      aria-label={rank === null ? nickname : `อันดับ ${rank} ${nickname}`}
     >
       <defs>
         <clipPath id={clipId}>

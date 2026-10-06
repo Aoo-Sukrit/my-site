@@ -192,6 +192,32 @@ export type LeaderboardRow = {
   rank_no: number;
 };
 
+// ---------------------------------------------------------------------------
+//  กระดานแซว (20261006090000_member_wall.sql)
+//  มาจากฟังก์ชัน member_wall_* เท่านั้น ตาราง member_wall ถูกปิดสิทธิ์ไว้หมด
+// ---------------------------------------------------------------------------
+
+export type WallMessage = {
+  id: string;
+  author_id: string;
+  author_name: string;
+  /** URL เต็มของรูปโปรไฟล์คนเขียน null ได้ถ้าเขายังไม่ได้ลงรูป */
+  author_avatar: string | null;
+  body: string;
+  /** เจ้าของกระดานกดซ่อนไว้ คนอื่นจะไม่ได้ข้อความนี้มาตั้งแต่ต้น */
+  hidden: boolean;
+  /** คนที่กำลังดูอยู่ลบข้อความนี้ได้ไหม ฐานข้อมูลเป็นคนตัดสินให้แล้ว */
+  can_delete: boolean;
+  created_at: string;
+};
+
+/** เดือนที่ทำระยะได้มากที่สุดของสมาชิกคนหนึ่ง */
+export type BestMonth = {
+  /** วันที่ 1 ของเดือนนั้น */
+  best_month: string;
+  best_km: string;
+};
+
 /** แอปที่มาของผลวิ่ง เรียงตามที่เพื่อนๆ ใช้กันบ่อย */
 export const RUN_SOURCES = [
   "Garmin",

@@ -11,17 +11,23 @@ import { SubmitButton } from "@/components/club/form-controls";
  * เพราะ confirm() บนมือถือบางตัวถูกบล็อก และสไตล์ให้เข้ากับเว็บไม่ได้
  *
  * ต้องวางไว้ข้างใน <form> เพราะจังหวะที่สองคือปุ่ม submit ของฟอร์มนั้น
+ *
+ * compact ใช้ตอนปุ่มต้องไปอยู่ในแถวเล็กๆ ปนกับข้อความอื่น เช่นใต้ข้อความ
+ * บนกระดานแซว ปุ่มเม็ดใหญ่จะดันแถวนั้นสูงจนผิดจังหวะ
+ * จังหวะที่สองยังเหมือนเดิมทุกขนาด เพราะเป็นจังหวะที่พลาดแล้วเสียหายจริง
  */
 export default function ConfirmSubmit({
   label,
   question,
   confirmLabel,
   pendingLabel,
+  compact = false,
 }: {
   label: string;
   question: string;
   confirmLabel: string;
   pendingLabel: string;
+  compact?: boolean;
 }) {
   const [armed, setArmed] = useState(false);
 
@@ -30,7 +36,11 @@ export default function ConfirmSubmit({
       <button
         type="button"
         onClick={() => setArmed(true)}
-        className="inline-flex min-h-11 items-center justify-center rounded-full border border-club-line px-5 text-sm font-medium tracking-wide text-club-line transition-colors hover:bg-accent-soft"
+        className={
+          compact
+            ? "text-xs text-muted underline transition-colors hover:text-foreground"
+            : "inline-flex min-h-11 items-center justify-center rounded-full border border-club-line px-5 text-sm font-medium tracking-wide text-club-line transition-colors hover:bg-accent-soft"
+        }
       >
         {label}
       </button>
