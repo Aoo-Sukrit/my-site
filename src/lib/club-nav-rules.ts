@@ -21,13 +21,36 @@ export const CLUB_NAV_HIDE_ON = [
   "/club/auth",
 ];
 
-export function clubChips(userId: string): ClubChip[] {
+/**
+ * ชิปในแถบเมนู
+ *
+ * ไม่มีชิป "โปรไฟล์ของฉัน" เพราะซ้ำกับเมนูที่อยู่หลังรูปโปรไฟล์มุมขวา
+ * และสามใบพอดีจอ 375px โดยไม่ต้องปัดเลื่อน ซึ่งอ่านง่ายกว่าสี่ใบที่ต้องเลื่อน
+ * ไม่ได้รับ userId แล้ว แต่คงพารามิเตอร์ไว้ไม่ได้ จึงตัดทิ้งไปเลย
+ */
+export function clubChips(): ClubChip[] {
   return [
     { href: "/club", label: "กระดาน", exact: true },
     { href: "/club/target", label: "เป้าเดือนนี้", exact: false },
     { href: "/club/share", label: "รูปลงสตอรี่", exact: false },
-    { href: `/club/member/${userId}`, label: "โปรไฟล์ของฉัน", exact: false },
   ];
+}
+
+/**
+ * ตอนนี้อยู่หน้าของตัวเองไหม (หน้าแก้โปรไฟล์ หรือหน้าโปรไฟล์ตัวเอง)
+ *
+ * ใช้ใส่วงแหวนรอบรูปโปรไฟล์มุมขวาแทนการไฮไลต์ชิป เพราะสองหน้านี้ไม่มีชิป
+ * ของตัวเองแล้ว ถ้าไม่มีอะไรสว่างเลยคนจะไม่รู้ว่าตอนนี้อยู่ตรงไหน
+ */
+export function isAccountActive(pathname: string, userId: string): boolean {
+  // เทียบ "/club/me" แบบเป๊ะหรือตามด้วยขีด ไม่ใช่ startsWith เฉยๆ
+  // เพราะ "/club/member/..." ก็ขึ้นต้นด้วย "/club/me" เหมือนกัน
+  // ถ้าใช้ startsWith เฉยๆ เปิดดูโปรไฟล์เพื่อนก็จะมีวงแหวนขึ้นด้วย
+  const isMePage = pathname === "/club/me" || pathname.startsWith("/club/me/");
+  const mine = `/club/member/${userId}`;
+  const isMyProfile = pathname === mine || pathname.startsWith(`${mine}/`);
+
+  return isMePage || isMyProfile;
 }
 
 export function hideClubNav(pathname: string): boolean {

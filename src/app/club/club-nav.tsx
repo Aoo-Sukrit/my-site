@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   clubChips,
   hideClubNav,
+  isAccountActive,
   isChipActive,
 } from "@/lib/club-nav-rules";
 
@@ -64,17 +65,22 @@ export default function ClubNav({
 
   if (hideClubNav(pathname)) return null;
 
-  const chips = clubChips(userId);
+  const chips = clubChips();
+  const onMyPages = isAccountActive(pathname, userId);
 
   return (
     // top อิงความสูงจริงของเมนูหลักที่ SiteHeader วัดแล้วเขียนไว้ให้
     // ค่าสำรอง 3.5rem ใช้ตอนจังหวะแรกก่อน JS จะทำงาน จะได้ไม่กระโดด
-    <div className="sticky top-[var(--site-header-h,3.5rem)] z-10 -mx-5 border-b border-border bg-background/85 px-5 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-2xl items-center gap-2 py-2">
-        {/* overflow-x-auto ให้ชิปเลื่อนแนวนอนบนมือถือ ไม่ตกบรรทัด */}
+    //
+    // -mt ดึงขึ้นไปลบระยะ py ด้านบนของ <main> ในโครงหลัก ไม่งั้นแถบนี้จะลอย
+    // ห่างจากเมนูหลักลงมา 40px แล้วตอนเลื่อนจอจะเห็นเนื้อหาไหลผ่านช่องว่างนั้น
+    <div className="sticky top-[var(--site-header-h,3.5rem)] z-10 -mx-5 -mt-10 mb-6 border-b border-border bg-background/85 px-5 backdrop-blur sm:-mt-14 sm:mb-8">
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-1.5 py-2">
+        {/* ชิปสามใบพอดีจอ 375px อยู่แล้ว overflow-x-auto เผื่อไว้สำหรับเครื่อง
+            ที่ตั้งฟอนต์ใหญ่กว่าปกติ ซึ่งจะทำให้ล้นได้ no-scrollbar ซ่อนแถบเลื่อน
+            ที่ไม่งั้นจะโผล่เป็นเส้นใต้แถว แต่ยังปัดเลื่อนได้ตามปกติ */}
         <nav aria-label="เมนูคลับ" className="min-w-0 flex-1">
-          {/* pr-2 เว้นที่ให้ชิปใบท้ายไม่ไปชนรูปโปรไฟล์ตอนเลื่อนสุดขวา */}
-          <ul className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pr-2">
+          <ul className="no-scrollbar -mx-1 flex items-center gap-1 overflow-x-auto px-1">
             {chips.map((chip) => {
               const active = isChipActive(pathname, chip);
 
@@ -83,7 +89,7 @@ export default function ClubNav({
                   <Link
                     href={chip.href}
                     aria-current={active ? "page" : undefined}
-                    className={`block rounded-full px-3 py-1.5 text-sm tracking-wide whitespace-nowrap transition-colors ${
+                    className={`block rounded-full px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors ${
                       active
                         ? "bg-accent-soft font-medium text-accent"
                         : "text-muted hover:bg-accent-soft hover:text-foreground"
@@ -104,23 +110,32 @@ export default function ClubNav({
             aria-haspopup="menu"
             aria-expanded={open}
             aria-label="เมนูบัญชี"
+            aria-current={onMyPages ? "page" : undefined}
             className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-accent-soft"
           >
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt=""
-                className="h-8 w-8 rounded-full border border-border object-cover object-top"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-sm font-medium text-accent-strong"
-              >
-                {nickname.slice(0, 1).toUpperCase()}
-              </span>
-            )}
+            {/* อยู่หน้าของตัวเองจะมีวงแหวนรอบรูป แทนการไฮไลต์ชิป
+                เพราะสองหน้านั้นไม่มีชิปของตัวเองอยู่ในแถบแล้ว */}
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                onMyPages ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
+              }`}
+            >
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full border border-border object-cover object-top"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-sm font-medium text-accent-strong"
+                >
+                  {nickname.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </span>
           </button>
 
           {open ? (

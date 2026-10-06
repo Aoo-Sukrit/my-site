@@ -67,3 +67,16 @@ body {
 p {
   line-height: 1.9;
 }
+
+/* แถวที่ปัดเลื่อนแนวนอนได้แต่ไม่ต้องโชว์แถบเลื่อน เช่นแถวชิปของเมนูคลับ
+   แถบเลื่อนบนมือถือกินที่ด้านล่างแถวจนดูเหมือนมีเส้นเกินมา
+   ต้องสั่งสองแบบ เพราะ Firefox ใช้ scrollbar-width ส่วน Safari กับ Chrome
+   ยังต้องสั่งผ่าน pseudo-element ของตัวเอง */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
