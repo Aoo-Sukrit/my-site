@@ -70,9 +70,8 @@ export default async function ChallengeList({ round }: { round: Round }) {
 
                 <p className="text-xs text-muted">
                   เป้า {formatKm(row.target_km)} กม. · ตอนนี้{" "}
-                  {formatKm(row.runner_total_km)} กม. · ข้างละ {row.bottles} ขวด
-                  ตั้งต้น · รวมตอนนี้{" "}
-                  {row.reach_bottles + row.miss_bottles} ขวด
+                  {formatKm(row.runner_total_km)} กม. · ตั้งกอง {row.bottles} ขวด
+                  · กองตอนนี้ {row.reach_bottles + row.miss_bottles} ขวด
                 </p>
 
                 <form action={adminDeleteChallengeAction}>

@@ -1,4 +1,4 @@
-import { splitBeer, type BeerSplit, type BeerStake } from "./beer-split";
+import { sharePerPerson, splitPot, type BeerSplit } from "./beer-split";
 
 /**
  * กติกาของคำท้า ฝั่งที่ไม่ต้องคุยกับฐานข้อมูล
@@ -13,10 +13,23 @@ import { splitBeer, type BeerSplit, type BeerStake } from "./beer-split";
  * ที่เก็บไว้ที่เดียว หน้าเว็บแค่เอา timestamp มาแสดงเฉยๆ
  */
 
+/** คนท้าวางกองตั้งต้นได้ 1 ถึง 12 ขวด */
 export const BOTTLE_MIN = 1;
 export const BOTTLE_MAX = 12;
 
-/** ตัวเลือกจำนวนขวดในฟอร์ม 1 ถึง 12 */
+/**
+ * เพื่อนเติมกองได้คนละ 0 ถึง 3 ขวด (0 = ร่วมหุ้นเฉยๆ)
+ * ต้องตรงกับ challenge_add_max() ในฐานข้อมูล
+ */
+export const JOIN_ADD_MAX = 3;
+
+/**
+ * ไม่มีใครจ่ายหรือรับเกินกี่ขวดต่อคน
+ * ต้องตรงกับ challenge_share_cap() ในฐานข้อมูล
+ */
+export const SHARE_CAP = 24;
+
+/** ตัวเลือกจำนวนขวดตอนท้า 1 ถึง 12 */
 export const BOTTLE_OPTIONS = Array.from(
   { length: BOTTLE_MAX - BOTTLE_MIN + 1 },
   (_, index) => BOTTLE_MIN + index,
@@ -171,10 +184,65 @@ export type StakeLike = {
   bottles: number;
 };
 
-function toStakes(rows: StakeLike[], side: ChallengeSide): BeerStake[] {
-  return rows
-    .filter((row) => row.side === side)
-    .map((row) => ({ id: row.profile_id, bottles: row.bottles }));
+/** ทั้งกอง = ผลรวมที่ทุกคนใส่ไว้ (คนท้า + ที่เพื่อนเติม) */
+export function potOf(stakes: StakeLike[]): number {
+  return stakes.reduce((total, stake) => total + stake.bottles, 0);
+}
+
+export function sideCount(stakes: StakeLike[], side: ChallengeSide): number {
+  return stakes.filter((stake) => stake.side === side).length;
+}
+
+/**
+ * ถ้ามีคนเข้าฝั่ง side พร้อมเติม add ขวด ยังไม่เกินเพดานต่อคนใช่ไหม
+ * คิดแบบเดียวกับ challenge_share_ok() ในฐานข้อมูลเป๊ะๆ
+ */
+function shareOk(stakes: StakeLike[], side: ChallengeSide, add: number): boolean {
+  const reach = sideCount(stakes, "reach") + (side === "reach" ? 1 : 0);
+  const miss = sideCount(stakes, "miss") + (side === "miss" ? 1 : 0);
+  const fewest = Math.min(reach, miss);
+  if (fewest === 0) return true;
+  return (potOf(stakes) + add) / fewest <= SHARE_CAP;
+}
+
+/**
+ * เข้าฝั่งนี้แล้วเติมได้มากสุดกี่ขวด (0 ถึง 3)
+ * ใช้จำกัดตัวเลือกในปุ่มเข้าร่วม ไม่ให้คนกดแล้วโดนฐานข้อมูลปฏิเสธ
+ * คืน 0 เมื่อเติมไม่ได้แล้ว ซึ่งยังร่วมหุ้น +0 ได้เสมอ
+ */
+export function maxAddFor(stakes: StakeLike[], side: ChallengeSide): number {
+  for (let add = JOIN_ADD_MAX; add > 0; add--) {
+    if (shareOk(stakes, side, add)) return add;
+  }
+  return 0;
+}
+
+export function checkAdd(value: string | number): Check {
+  const add = typeof value === "number" ? value : Number(value);
+  if (typeof value === "string" && value.trim() === "") {
+    return { ok: false, reason: "เลือกก่อนว่าจะเติมกี่ขวด" };
+  }
+  if (!Number.isInteger(add) || add < 0 || add > JOIN_ADD_MAX) {
+    return { ok: false, reason: `เติมกองได้ตั้งแต่ 0 ถึง ${JOIN_ADD_MAX} ขวด` };
+  }
+  return { ok: true };
+}
+
+/**
+ * ถ้าฝั่ง winner ชนะ แต่ละคนฝั่งชนะได้เท่าไหร่ และฝั่งแพ้เสียคนละเท่าไหร่
+ * ใช้โชว์พรีวิวบนการ์ดก่อนตัดสิน
+ */
+export function previewIfWins(stakes: StakeLike[], winner: ChallengeSide) {
+  const loser: ChallengeSide = winner === "reach" ? "miss" : "reach";
+  const pot = potOf(stakes);
+  return {
+    gain: sharePerPerson(pot, sideCount(stakes, winner)),
+    loss: sharePerPerson(pot, sideCount(stakes, loser)),
+  };
+}
+
+function idsOf(rows: StakeLike[], side: ChallengeSide): string[] {
+  return rows.filter((row) => row.side === side).map((row) => row.profile_id);
 }
 
 /**
@@ -187,10 +255,11 @@ export function challengePayouts(
 ): BeerSplit {
   if (!isSettled(status)) return { pot: 0, winners: [], losers: [] };
 
-  const reach = toStakes(stakes, "reach");
-  const miss = toStakes(stakes, "miss");
+  const pot = potOf(stakes);
+  const reach = idsOf(stakes, "reach");
+  const miss = idsOf(stakes, "miss");
 
   return status === "reached"
-    ? splitBeer(reach, miss)
-    : splitBeer(miss, reach);
+    ? splitPot(pot, reach, miss)
+    : splitPot(pot, miss, reach);
 }

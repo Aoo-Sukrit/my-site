@@ -28,6 +28,7 @@ import { getRoundPrizes } from "@/lib/prizes";
 import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
+import ChallengeBoard from "./challenge-board";
 import DismissibleBanner from "./dismissible-banner";
 import LogRunButton from "./log-run-button";
 import MonthPicker from "./month-picker";
@@ -132,7 +133,9 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const params = await props.searchParams;
 
   const boardTab =
-    params.board === "percent" || params.board === "rewards"
+    params.board === "percent" ||
+    params.board === "rewards" ||
+    params.board === "challenges"
       ? params.board
       : "distance";
   const showPercent = boardTab === "percent";
@@ -202,7 +205,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
     (phase === "open" || phase === "revealed");
 
   /** ลิงก์แท็บที่พาเดือนที่เลือกไปด้วย เดือนปัจจุบันไม่ต้องใส่ month */
-  const tabHref = (tab: "percent" | "rewards" | null) => {
+  const tabHref = (tab: "percent" | "rewards" | "challenges" | null) => {
     const parts: string[] = [];
     if (!isCurrentMonth) parts.push(`month=${selectedMonth}`);
     if (tab) parts.push(`board=${tab}`);
@@ -271,7 +274,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
 
           {myPendingChallenges.length > 0 ? (
             <Notice
-              href="/club?board=rewards"
+              href="/club?board=challenges"
               tone="loud"
               title={`มีคนท้าคุณ ${myPendingChallenges.length} คำท้า`}
               detail="รอคุณกดรับ"
@@ -319,12 +322,28 @@ export default async function ClubPage(props: PageProps<"/club">) {
           <BoardTab href={tabHref("rewards")} active={boardTab === "rewards"}>
             รางวัล
           </BoardTab>
+          {/* แยกคำท้าออกมาจากแท็บรางวัลเป็นแท็บของตัวเอง ชื่อเต็มที่อยากได้คือ
+              "อยากเลี้ยงเบียร์เพื่อน" แต่ยาวเกินช่องบนจอ 375px ใช้ "คำท้า" ไปก่อน */}
+          <BoardTab
+            href={tabHref("challenges")}
+            active={boardTab === "challenges"}
+          >
+            คำท้า
+          </BoardTab>
         </nav>
       </div>
 
-      {boardTab === "rewards" ? (
+      {boardTab === "rewards" || boardTab === "challenges" ? (
         round ? (
-          <RewardsTab round={round} monthKey={monthArg} readOnly={readOnly} />
+          boardTab === "rewards" ? (
+            <RewardsTab round={round} monthKey={monthArg} readOnly={readOnly} />
+          ) : (
+            <ChallengeBoard
+              round={round}
+              monthKey={monthArg}
+              readOnly={readOnly}
+            />
+          )
         ) : (
           <p className="text-sm text-muted">ยังไม่มีรอบของเดือนนี้</p>
         )

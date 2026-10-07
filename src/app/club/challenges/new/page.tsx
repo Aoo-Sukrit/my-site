@@ -5,7 +5,7 @@ import Alert from "@/components/club/alert";
 import { requireApproved } from "@/lib/auth";
 import { getChallengeableMembers, getRoundDeadlines } from "@/lib/challenges";
 import { thaiDateTimeLong } from "@/lib/date";
-import { isJoinOpen } from "@/lib/challenge-rules";
+import { SHARE_CAP, isJoinOpen } from "@/lib/challenge-rules";
 
 import ChallengeForm from "../challenge-form";
 
@@ -55,26 +55,36 @@ export default async function NewChallengePage() {
             · เป้าต้องมากกว่าระยะที่เขาวิ่งไปแล้ว และนับระยะรวมทั้งเดือน
             ไม่ได้เริ่มนับจากวันที่ท้า
           </p>
-          <p>· เขาต้องกดรับก่อนถึงจะเริ่ม ระหว่างรอคุณถอนคำท้าได้</p>
           <p>
-            · พอรับแล้วเขาวางเท่ากับคุณอัตโนมัติ คนอื่นมาลงข้างไหนก็ได้
-            คนละ 1–12 ขวด ข้างเดียวต่อคน
+            · คุณตั้งกอง 1–12 ขวด อยู่ฝั่งไม่ถึง เขาอยู่ฝั่งถึง
+            สองคนเติมกองเองไม่ได้
           </p>
-          <p>· ท้า รับ และลงเพิ่มได้ถึง {thaiDateTimeLong(deadlines.lock_at)}</p>
+          <p>
+            · เพื่อนเข้าร่วมฝั่งไหนก็ได้ คนละครั้ง เติมกอง +0 ถึง +3 ขวด
+            (+0 = ร่วมหุ้นช่วยหาร) เข้าร่วมได้ตั้งแต่ตอนรอรับ
+          </p>
+          <p>
+            · เขาต้องกดรับก่อนถึงจะเริ่ม ระหว่างรอคุณถอนคำท้าได้ ถ้าไม่รับ
+            ทุกคนที่ลงไว้ถือว่าโมฆะ
+          </p>
+          <p>· ท้า รับ และเข้าร่วมได้ถึง {thaiDateTimeLong(deadlines.lock_at)}</p>
           <p>
             · ตัดสิน {thaiDateTimeLong(deadlines.settle_at)} จากระยะจริง
             เพราะผลวิ่งกรอกย้อนหลังได้อีกไม่กี่วันหลังจบเดือน
           </p>
-          <p>· ฝั่งแพ้เสียตามที่วาง ฝั่งชนะแบ่งกันตามสัดส่วน ปัดเป็นครึ่งขวด</p>
-          <p>· วางแล้วถอนไม่ได้</p>
+          <p>
+            · ฝั่งแพ้จ่ายทั้งกองหารเท่ากัน ฝั่งชนะรับทั้งกองหารเท่ากัน
+            ไม่ปัดเศษ และไม่มีใครจ่ายหรือรับเกิน {SHARE_CAP} ขวดต่อคน
+          </p>
+          <p>· ลงแล้วถอนไม่ได้</p>
         </section>
       ) : null}
 
       <Link
-        href="/club?board=rewards"
+        href="/club?board=challenges"
         className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm tracking-wide text-muted transition-colors hover:border-accent hover:text-foreground"
       >
-        ← กลับแท็บรางวัล
+        ← กลับแท็บคำท้า
       </Link>
     </div>
   );

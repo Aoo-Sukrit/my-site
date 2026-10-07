@@ -1,47 +1,32 @@
 /**
- * แบ่งเบียร์ตอนคำท้าตัดสินแล้ว
+ * แบ่งเบียร์ตอนคำท้าตัดสินแล้ว แบบกองกลาง หารเท่ากัน
  *
  * ไฟล์นี้เป็นฟังก์ชันล้วน ไม่แตะฐานข้อมูลและไม่แตะ DOM จึงเรียกได้ทั้งจาก
  * Server Component และจากไฟล์ "use client"
  *
- * กติกา (คิดแบบพนันกีฬา)
- *   - ฝั่งที่แพ้ เสียเท่าที่ตัวเองวางไว้ ทุกคน
- *   - ฝั่งที่ชนะ แบ่งเบียร์ของฝั่งแพ้ตามสัดส่วนที่ตัวเองวาง
- *   - ปัดเป็นครึ่งขวด เพราะขวดจริงผ่าครึ่งได้ แต่ผ่าเป็นเศษสามส่วนไม่ได้
- *   - ยอดรวมหลังปัดของฝั่งชนะ ต้องเท่ากับยอดที่ฝั่งแพ้เสียไปเป๊ะๆ
- *     ไม่งั้นจะมีเบียร์งอกหรือหายระหว่างทาง ซึ่งคนจริงๆ จะทะเลาะกัน
+ * กติกา (ตกลงกันวันที่ 7 ต.ค. 2569 ดู 20261007120000_challenge_shared_pot.sql)
+ *   - กอง = คนท้าวาง 1–12 + เพื่อนแต่ละคนเติม 0–3
+ *   - ฝั่งแพ้จ่ายทั้งกอง หารเท่ากันทุกคนในฝั่ง
+ *   - ฝั่งชนะรับทั้งกอง หารเท่ากันทุกคนในฝั่ง
+ *   - ไม่ปัดเศษ หารได้ 5.25 ก็ 5.25 จะจ่ายเป็นเบียร์หรือเงินไปตกลงกันเอง
  *
- * ตัวอย่างจากโจทย์
- *   ฝั่งถึง   คนถูกท้า 4 + A 2 = 6
- *   ฝั่งไม่ถึง คนท้า  4 + B 4 = 8
- *   ถ้าถึง → คนท้าเสีย 4, B เสีย 4 รวม 8
- *            คนถูกท้าได้ 8 × 4/6 = 5.33 → 5.5
- *            A ได้        8 × 2/6 = 2.67 → 2.5
- *            รวม 8 พอดี
+ * ตัวอย่าง: คนท้า 12 + เพื่อน A เติม 3 อยู่ฝั่งไม่ถึง (กอง 15)
+ *           คนถูกท้า + เพื่อน B ร่วมหุ้น +0 อยู่ฝั่งถึง
+ *   ถ้าถึง  → คนท้า −7.5, A −7.5, คนถูกท้า +7.5, B +7.5
+ *   ถ้าไม่ถึง → กลับข้างกัน
  *
- * วิธีปัดที่ใช้คือ largest remainder ในหน่วย "ครึ่งขวด"
- * ปัดลงให้ทุกคนก่อน เหลือเศษเท่าไหร่ค่อยแจกทีละครึ่งขวดให้คนที่เศษมากสุด
- * วิธีนี้ทำให้ผลรวมตรงเป๊ะเสมอ ซึ่งการปัดทีละคนแบบ Math.round ทำไม่ได้
+ * (ของเดิมแบ่งตามสัดส่วนที่แต่ละคนวาง ได้กับเสียเลยไม่เท่ากันระหว่างสองกรณี
+ * จนเพื่อนในกลุ่มงง จึงเปลี่ยนเป็นแบบนี้)
  */
-
-/** ครึ่งขวดคือหน่วยย่อยที่สุดที่ยอมให้เกิดขึ้น */
-const HALVES_PER_BOTTLE = 2;
-
-export type BeerStake = {
-  /** ใครก็ได้ที่ระบุตัวตนได้ ปกติคือ profile id */
-  id: string;
-  /** จำนวนขวดที่วางไว้ เป็นจำนวนเต็ม 1 ถึง 12 */
-  bottles: number;
-};
 
 export type BeerPayout = {
   id: string;
-  /** บวกคือได้ ลบคือเสีย หน่วยเป็นขวด มีได้ถึงครึ่งขวด */
+  /** บวกคือได้ ลบคือเสีย หน่วยเป็นขวด เป็นทศนิยมได้ */
   bottles: number;
 };
 
 export type BeerSplit = {
-  /** เบียร์ทั้งหมดที่ฝั่งแพ้เสียไป เท่ากับผลรวมของฝั่งชนะเสมอ */
+  /** ทั้งกอง เท่ากับผลรวมที่ฝั่งชนะได้ และผลรวมที่ฝั่งแพ้เสีย */
   pot: number;
   /** ฝั่งชนะ เรียงตามลำดับที่ส่งเข้ามา ค่าเป็นบวก */
   winners: BeerPayout[];
@@ -49,80 +34,44 @@ export type BeerSplit = {
   losers: BeerPayout[];
 };
 
-function sumBottles(stakes: BeerStake[]): number {
-  return stakes.reduce((total, stake) => total + stake.bottles, 0);
+/** ส่วนแบ่งต่อคนเมื่อหารกองให้ count คน ไม่มีใครในฝั่งคืน 0 */
+export function sharePerPerson(pot: number, count: number): number {
+  return count > 0 ? pot / count : 0;
 }
 
 /**
- * @param winners ฝั่งที่ทายถูก
- * @param losers  ฝั่งที่ทายผิด
+ * @param pot        ทั้งกอง
+ * @param winnerIds  ทุกคนในฝั่งที่ทายถูก
+ * @param loserIds   ทุกคนในฝั่งที่ทายผิด
  *
- * ถ้าฝั่งใดฝั่งหนึ่งว่าง แปลว่าไม่มีการพนันเกิดขึ้นจริง คืนผลเปล่า
- * ในเกมจริงกรณีนี้ไม่เกิด เพราะพอกดรับปุ๊บคนท้ากับคนถูกท้าอยู่คนละข้างทันที
- * แต่กันไว้เผื่อแอดมินลบคำท้าไประหว่างทางแล้วข้อมูลเหลือข้างเดียว
+ * ถ้าฝั่งใดฝั่งหนึ่งว่าง แปลว่าไม่มีใครให้จ่ายหรือรับ คืนผลเปล่า
+ * ในเกมจริงไม่เกิด เพราะคู่ท้าอยู่คนละฝั่งตั้งแต่ตอนท้า
  */
-export function splitBeer(
-  winners: BeerStake[],
-  losers: BeerStake[],
+export function splitPot(
+  pot: number,
+  winnerIds: string[],
+  loserIds: string[],
 ): BeerSplit {
-  const pot = sumBottles(losers);
-  const winnerTotal = sumBottles(winners);
-
-  if (
-    winners.length === 0 ||
-    losers.length === 0 ||
-    pot <= 0 ||
-    winnerTotal <= 0
-  ) {
+  if (winnerIds.length === 0 || loserIds.length === 0 || pot <= 0) {
     return { pot: 0, winners: [], losers: [] };
   }
 
-  const potHalves = Math.round(pot * HALVES_PER_BOTTLE);
-
-  // ปัดลงก่อน แล้วจำเศษไว้ว่าใครใกล้ได้เพิ่มที่สุด
-  const shares = winners.map((winner, index) => {
-    const exactHalves = (potHalves * winner.bottles) / winnerTotal;
-    const floorHalves = Math.floor(exactHalves);
-    return {
-      index,
-      id: winner.id,
-      stake: winner.bottles,
-      halves: floorHalves,
-      remainder: exactHalves - floorHalves,
-    };
-  });
-
-  let leftover = potHalves - shares.reduce((sum, s) => sum + s.halves, 0);
-
-  // เศษมากกว่าได้ก่อน เสมอกันให้คนที่วางเยอะกว่า เสมออีกก็เอาคนที่มาก่อน
-  // เรียงบนสำเนาแต่แก้ค่าในวัตถุเดิม ลำดับที่คืนออกไปจึงยังเป็นลำดับที่ส่งเข้ามา
-  const queue = [...shares].sort(
-    (a, b) =>
-      b.remainder - a.remainder || b.stake - a.stake || a.index - b.index,
-  );
-
-  for (const share of queue) {
-    if (leftover <= 0) break;
-    share.halves += 1;
-    leftover -= 1;
-  }
+  const gain = sharePerPerson(pot, winnerIds.length);
+  const loss = sharePerPerson(pot, loserIds.length);
 
   return {
     pot,
-    winners: shares.map((share) => ({
-      id: share.id,
-      bottles: share.halves / HALVES_PER_BOTTLE,
-    })),
-    losers: losers.map((loser) => ({
-      id: loser.id,
-      bottles: -loser.bottles,
-    })),
+    winners: winnerIds.map((id) => ({ id, bottles: gain })),
+    losers: loserIds.map((id) => ({ id, bottles: -loss })),
   };
 }
 
-/** "5.5 ขวด" / "3 ขวด" — ไม่เอา .0 ท้ายมาให้รก */
+/**
+ * "7.5 ขวด" / "5.25 ขวด" / "3 ขวด"
+ * ทศนิยมไม่เกินสองตำแหน่ง แล้วตัดศูนย์ท้ายทิ้ง ไม่ให้ขึ้น 3.00 ให้รก
+ */
 export function formatBottles(bottles: number): string {
   const size = Math.abs(bottles);
-  const text = Number.isInteger(size) ? String(size) : size.toFixed(1);
+  const text = String(Math.round(size * 100) / 100);
   return `${text} ขวด`;
 }

@@ -92,7 +92,7 @@ export default function ChallengeForm({
       }
 
       router.push(
-        `/club?board=rewards&msg=${encodeURIComponent("ส่งคำท้าแล้ว รอเขากดรับ")}`,
+        `/club?board=challenges&msg=${encodeURIComponent("ส่งคำท้าแล้ว รอเขากดรับ")}`,
       );
     });
   }
@@ -179,7 +179,7 @@ export default function ChallengeForm({
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium">วางเบียร์กี่ขวด</span>
+            <span className="text-sm font-medium">ตั้งกองกี่ขวด</span>
             <select
               value={bottles}
               onChange={(event) => {
@@ -195,8 +195,8 @@ export default function ChallengeForm({
               ))}
             </select>
             <span className="block text-xs text-muted">
-              คุณอยู่ข้าง{SIDE_LABEL.miss} ถ้าเขากดรับ เขาจะวางเท่ากันข้าง
-              {SIDE_LABEL.reach}
+              คุณอยู่ฝั่ง{SIDE_LABEL.miss} เขาอยู่ฝั่ง{SIDE_LABEL.reach}
+              เพื่อนมาร่วมฝั่งไหนก็ได้ เติมกองได้คนละ +0 ถึง +3
             </span>
           </label>
 
@@ -204,7 +204,7 @@ export default function ChallengeForm({
             <div className="space-y-3 rounded-xl border border-club-line bg-accent-soft p-3">
               <p className="text-sm leading-relaxed">
                 ท้า {runner.nickname} ว่าเดือนนี้ระยะรวมจะไม่ถึง{" "}
-                {formatKm(targetKm)} กม. และวาง {bottles} ขวดข้าง
+                {formatKm(targetKm)} กม. ตั้งกอง {bottles} ขวด อยู่ฝั่ง
                 {SIDE_LABEL.miss} ใช่ไหม
               </p>
               <div className="flex flex-wrap gap-2">

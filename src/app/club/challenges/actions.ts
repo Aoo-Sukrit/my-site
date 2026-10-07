@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireApproved } from "@/lib/auth";
 import {
+  checkAdd,
   checkBottles,
   checkTargetKm,
   isChallengeSide,
@@ -24,7 +25,7 @@ function refresh() {
   revalidatePath("/club/admin");
 }
 
-const REWARDS = "/club?board=rewards";
+const CHALLENGES_TAB = "/club?board=challenges";
 
 /** ต่อ query string ให้ถูกไม่ว่า back จะมี ? อยู่แล้วหรือไม่ */
 function withParam(back: string, key: string, value: string) {
@@ -75,7 +76,7 @@ async function runChallengeRpc(
   await requireApproved();
 
   const challengeId = String(formData.get("challenge_id") ?? "");
-  const back = String(formData.get("back") ?? REWARDS);
+  const back = String(formData.get("back") ?? CHALLENGES_TAB);
 
   if (!challengeId) {
     redirect(withParam(back, "err", "ไม่รู้ว่าเป็นคำท้าใบไหน"));
@@ -108,7 +109,7 @@ export async function joinChallengeAction(formData: FormData) {
   const challengeId = String(formData.get("challenge_id") ?? "");
   const side = String(formData.get("side") ?? "");
   const bottles = String(formData.get("bottles") ?? "");
-  const back = String(formData.get("back") ?? REWARDS);
+  const back = String(formData.get("back") ?? CHALLENGES_TAB);
 
   if (!challengeId) {
     redirect(withParam(back, "err", "ไม่รู้ว่าเป็นคำท้าใบไหน"));
@@ -117,7 +118,8 @@ export async function joinChallengeAction(formData: FormData) {
     redirect(withParam(back, "err", "เลือกข้างก่อนว่าถึงแน่หรือไม่ถึงแน่"));
   }
 
-  const check = checkBottles(bottles);
+  // เพื่อนเติมได้ 0 ถึง 3 (คนท้าตั้งกอง 1–12 ใช้ checkBottles ตอนสร้าง)
+  const check = checkAdd(bottles);
   if (!check.ok) redirect(withParam(back, "err", check.reason));
 
   const supabase = await createSupabaseServerClient();
@@ -130,7 +132,7 @@ export async function joinChallengeAction(formData: FormData) {
   if (error) redirect(withParam(back, "err", toThaiDbError(error)));
 
   refresh();
-  redirect(withParam(back, "msg", "วางเบียร์แล้ว ถอนไม่ได้นะ"));
+  redirect(withParam(back, "msg", "เข้าร่วมแล้ว ถอนไม่ได้นะ"));
 }
 
 /** แอดมินลบคำท้าทั้งใบ เบียร์ที่วางไว้หายตามไปด้วย */

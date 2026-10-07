@@ -13,7 +13,6 @@ import { roundPhase, signedDelta } from "@/lib/target-rules";
 import { getRoundTargets, getVoteBreakdown } from "@/lib/targets";
 import type { Round, VoteBreakdownRow } from "@/lib/supabase/types";
 
-import ChallengeBoard from "./challenge-board";
 import PrizeBoard from "./prize-board";
 
 /** สีป้ายตามเครื่องหมาย ใช้ token เดิมทั้งหมด บวกสีลบที่เพิ่งเพิ่มหนึ่งตัว */
@@ -77,7 +76,6 @@ export default async function RewardsTab({
   return (
     <div className="space-y-10">
       <PrizeBoard round={round} monthKey={monthKey} readOnly={readOnly} />
-      <ChallengeBoard round={round} monthKey={monthKey} readOnly={readOnly} />
       <VoteBreakdown round={round} monthKey={monthKey} />
     </div>
   );

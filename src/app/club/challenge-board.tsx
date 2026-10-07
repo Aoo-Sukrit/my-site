@@ -5,12 +5,16 @@ import ConfirmSubmit from "@/components/club/confirm-submit";
 import { formatBottles } from "@/lib/beer-split";
 import {
   CHALLENGE_STATUS_LABEL,
+  SHARE_CAP,
   SIDE_LABEL,
   challengePayouts,
   isChallengeStatus,
   isDormant,
   isJoinOpen,
   isSettled,
+  maxAddFor,
+  potOf,
+  previewIfWins,
   progressPercent,
   remainingKm,
   type ChallengeSide,
@@ -39,7 +43,7 @@ import JoinStake from "./challenges/join-stake";
 const ADD_BUTTON =
   "flex min-h-12 w-full items-center justify-center rounded-2xl border border-dashed border-club-line text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft";
 
-const BACK = "/club?board=rewards";
+const BACK = "/club?board=challenges";
 
 /** สถานะที่ฐานข้อมูลส่งมาเป็นสตริง แปลงให้เป็นชนิดที่รู้จัก */
 function statusOf(row: ChallengeRow): ChallengeStatus {
@@ -142,17 +146,22 @@ function ProgressBar({
   );
 }
 
-/** กล่องข้างหนึ่ง มีจำนวนรวม รูปคนที่ลง และปุ่มลงเพิ่มถ้ายังลงได้ */
+/**
+ * กล่องฝั่งหนึ่ง มีจำนวนคน รูปคนที่อยู่ฝั่งนี้ และปุ่มเข้าร่วมถ้ายังเข้าได้
+ *
+ * ป้ายเลขบนรูปคือเบียร์ที่คนนั้นใส่กอง คนท้าใส่กองตั้งต้น เพื่อนขึ้น +1 ถึง +3
+ * คนถูกท้ากับเพื่อนที่ร่วมหุ้น +0 ไม่มีป้าย เพราะไม่ได้ทำให้กองโต
+ */
 function SideBox({
   side,
-  bottles,
-  stakes,
+  sideStakes,
+  allStakes,
   canJoin,
   row,
 }: {
   side: ChallengeSide;
-  bottles: number;
-  stakes: ChallengeStakeRow[];
+  sideStakes: ChallengeStakeRow[];
+  allStakes: ChallengeStakeRow[];
   canJoin: boolean;
   row: ChallengeRow;
 }) {
@@ -166,19 +175,25 @@ function SideBox({
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-xs text-muted">{SIDE_LABEL[side]}</span>
-        <span className="font-display text-sm font-semibold tabular-nums text-accent-strong">
-          {bottles} ขวด
+        <span className="text-xs font-medium tabular-nums text-accent-strong">
+          {sideStakes.length} คน
         </span>
       </div>
 
-      {stakes.length === 0 ? (
+      {sideStakes.length === 0 ? (
         <p className="text-[11px] text-muted">ยังไม่มีใคร</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
-          {stakes.map((stake) => (
+          {sideStakes.map((stake) => (
             <span
               key={stake.profile_id}
-              title={`${stake.nickname} ${stake.bottles} ขวด`}
+              title={
+                stake.profile_id === row.challenger_id
+                  ? `${stake.nickname} ตั้งกอง ${stake.bottles} ขวด`
+                  : stake.profile_id === row.runner_id
+                    ? `${stake.nickname} คนถูกท้า`
+                    : `${stake.nickname} เติม +${stake.bottles}`
+              }
               className="relative block"
             >
               <Avatar
@@ -186,9 +201,13 @@ function SideBox({
                 nickname={stake.nickname}
                 size={26}
               />
-              <span className="absolute -right-1 -bottom-1 min-w-4 rounded-full bg-club-line px-1 text-center text-[10px] font-medium tabular-nums text-background">
-                {stake.bottles}
-              </span>
+              {stake.bottles > 0 ? (
+                <span className="absolute -right-1.5 -bottom-1 min-w-4 rounded-full bg-club-line px-1 text-center text-[10px] font-medium tabular-nums text-background">
+                  {stake.profile_id === row.challenger_id
+                    ? stake.bottles
+                    : `+${stake.bottles}`}
+                </span>
+              ) : null}
             </span>
           ))}
         </div>
@@ -202,7 +221,80 @@ function SideBox({
           side={side}
           runnerNickname={row.runner_nickname}
           targetKm={formatKm(row.target_km)}
+          maxAdd={maxAddFor(allStakes, side)}
+          back={BACK}
         />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * กองกลางของคำท้าหนึ่งใบ: ขนาดกอง สองฝั่ง และพรีวิวว่าใครจะได้เสียคนละเท่าไหร่
+ * ใช้ทั้งใบที่รอรับและใบที่กำลังแข่ง เพราะเพื่อนเข้าร่วมได้ตั้งแต่ตอนรอรับ
+ */
+function PotPanel({
+  row,
+  stakes,
+  canJoin,
+  showPreview,
+}: {
+  row: ChallengeRow;
+  stakes: ChallengeStakeRow[];
+  canJoin: boolean;
+  showPreview: boolean;
+}) {
+  const pot = potOf(stakes);
+  const ifReach = previewIfWins(stakes, "reach");
+  const ifMiss = previewIfWins(stakes, "miss");
+
+  return (
+    <div className="space-y-2">
+      <p className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="text-muted">กองกลาง</span>
+        <span className="font-display text-base font-semibold tabular-nums text-accent-strong">
+          {formatBottles(pot)}
+        </span>
+      </p>
+
+      <div className="grid grid-cols-2 gap-2">
+        <SideBox
+          side="reach"
+          sideStakes={stakes.filter((stake) => stake.side === "reach")}
+          allStakes={stakes}
+          canJoin={canJoin}
+          row={row}
+        />
+        <SideBox
+          side="miss"
+          sideStakes={stakes.filter((stake) => stake.side === "miss")}
+          allStakes={stakes}
+          canJoin={canJoin}
+          row={row}
+        />
+      </div>
+
+      {/* พรีวิวสองกรณี คนจะได้รู้ตั้งแต่ตอนนี้ว่าเข้าฝั่งไหนแล้วได้เสียเท่าไหร่
+          หารเท่ากันทั้งกอง ไม่ปัดเศษ */}
+      {showPreview && pot > 0 ? (
+        <div className="space-y-0.5 rounded-xl bg-background px-3 py-2 text-[11px] leading-relaxed text-muted">
+          <p>
+            ถ้าถึง: ฝั่ง{SIDE_LABEL.reach}ได้คนละ{" "}
+            <span className="font-medium tabular-nums text-accent-strong">
+              +{formatBottles(ifReach.gain)}
+            </span>{" "}
+            · ฝั่ง{SIDE_LABEL.miss}จ่ายคนละ{" "}
+            <span className="tabular-nums">{formatBottles(ifReach.loss)}</span>
+          </p>
+          <p>
+            ถ้าไม่ถึง: ฝั่ง{SIDE_LABEL.miss}ได้คนละ{" "}
+            <span className="font-medium tabular-nums text-accent-strong">
+              +{formatBottles(ifMiss.gain)}
+            </span>{" "}
+            · ฝั่ง{SIDE_LABEL.reach}จ่ายคนละ{" "}
+            <span className="tabular-nums">{formatBottles(ifMiss.loss)}</span>
+          </p>
+        </div>
       ) : null}
     </div>
   );
@@ -225,7 +317,7 @@ function PayoutLine({
     <div className="space-y-1 border-t border-border pt-3">
       <p className="text-[11px] text-muted">
         ฝั่ง{status === "reached" ? SIDE_LABEL.reach : SIDE_LABEL.miss}ชนะ ·
-        เบียร์ที่เปลี่ยนมือ {formatBottles(split.pot)}
+        ทั้งกอง {formatBottles(split.pot)} หารเท่ากันทั้งสองฝั่ง
       </p>
       <p className="text-xs leading-relaxed">
         {split.winners.map((payout, index) => (
@@ -302,7 +394,7 @@ function ChallengeCard({
   const daysLeft = daysLeftUntil(monthEnd);
   const joinOpen = isJoinOpen(row.lock_at);
 
-  // คู่กรณีสองคนวางเบียร์ไว้ตั้งแต่กดรับแล้ว ลงเพิ่มไม่ได้
+  // คู่ท้าเติมกองเองไม่ได้ เพื่อนที่ยังไม่ได้ลงเท่านั้นที่เข้าร่วมได้
   const bystander =
     row.my_side === null && !row.i_am_challenger && !row.i_am_runner;
   const canJoin = !readOnly && status === "running" && joinOpen && bystander;
@@ -324,9 +416,6 @@ function ChallengeCard({
     }
     return { label: CHALLENGE_STATUS_LABEL.running, tone: "live" as const };
   })();
-
-  const reachStakes = stakes.filter((stake) => stake.side === "reach");
-  const missStakes = stakes.filter((stake) => stake.side === "miss");
 
   return (
     <li className="space-y-3 rounded-2xl border border-border bg-surface p-4">
@@ -365,22 +454,12 @@ function ChallengeCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <SideBox
-          side="reach"
-          bottles={row.reach_bottles}
-          stakes={reachStakes}
-          canJoin={canJoin}
-          row={row}
-        />
-        <SideBox
-          side="miss"
-          bottles={row.miss_bottles}
-          stakes={missStakes}
-          canJoin={canJoin}
-          row={row}
-        />
-      </div>
+      <PotPanel
+        row={row}
+        stakes={stakes}
+        canJoin={canJoin}
+        showPreview={!isSettled(status)}
+      />
 
       {isSettled(status) ? (
         <PayoutLine status={status} stakes={stakes} />
@@ -395,14 +474,22 @@ function ChallengeCard({
   );
 }
 
-/** ใบที่ยังรอคนถูกท้ากดรับ */
+/** ใบที่ยังรอคนถูกท้ากดรับ เพื่อนเข้าร่วมได้แล้วตั้งแต่ตอนนี้ */
 function PendingCard({
   row,
+  stakes,
   readOnly,
 }: {
   row: ChallengeRow;
+  stakes: ChallengeStakeRow[];
   readOnly: boolean;
 }) {
+  const bystander =
+    row.my_side === null && !row.i_am_challenger && !row.i_am_runner;
+  const canJoin = !readOnly && isJoinOpen(row.lock_at) && bystander;
+  const ifReach = previewIfWins(stakes, "reach");
+  const ifMiss = previewIfWins(stakes, "miss");
+
   return (
     <li className="space-y-3 rounded-2xl border border-dashed border-club-line bg-surface p-4">
       <div className="flex items-start justify-between gap-2">
@@ -414,10 +501,13 @@ function PendingCard({
         ระยะรวมเดือนนี้ถึง {formatKm(row.target_km)} กม.
       </p>
       <p className="text-xs text-muted">
-        วางไว้ข้างละ {row.bottles} ขวด · ตอนท้า {row.runner_nickname} วิ่งไปแล้ว{" "}
-        {formatKm(row.baseline_km)} กม. · ถ้าไม่มีใครกดถึง{" "}
-        {thaiDateTimeLong(row.lock_at)} คำท้านี้ตกไป
+        {row.challenger_nickname} ตั้งกอง {row.bottles} ขวด · ตอนท้า{" "}
+        {row.runner_nickname} วิ่งไปแล้ว {formatKm(row.baseline_km)} กม. ·
+        ถ้าไม่กดรับถึง {thaiDateTimeLong(row.lock_at)} คำท้านี้ตกไป
+        และทุกคนที่ลงไว้ถือว่าโมฆะ
       </p>
+
+      <PotPanel row={row} stakes={stakes} canJoin={canJoin} showPreview />
 
       {readOnly ? (
         <p className="text-xs text-muted">เดือนนี้ผ่านไปแล้ว กดอะไรไม่ได้</p>
@@ -428,7 +518,7 @@ function PendingCard({
             <input type="hidden" name="back" value={BACK} />
             <ConfirmSubmit
               label="รับคำท้า"
-              question={`รับคำท้าว่าเดือนนี้จะวิ่งให้ถึง ${formatKm(row.target_km)} กม. และวาง ${row.bottles} ขวดข้าง${SIDE_LABEL.reach} ใช่ไหม รับแล้วถอนไม่ได้`}
+              question={`รับคำท้าว่าเดือนนี้จะวิ่งให้ถึง ${formatKm(row.target_km)} กม. ใช่ไหม ตอนนี้กองกลาง ${formatBottles(potOf(stakes))} ถ้าถึงฝั่งคุณได้คนละ ${formatBottles(ifReach.gain)} ถ้าไม่ถึงจ่ายคนละ ${formatBottles(ifMiss.loss)} เพื่อนยังเข้าร่วมเพิ่มได้ถึงวันที่ 20 แต่ไม่มีใครจ่ายเกิน ${SHARE_CAP} ขวดต่อคน รับแล้วถอนไม่ได้`}
               confirmLabel="รับเลย"
               pendingLabel="กำลังรับ…"
             />
@@ -488,7 +578,9 @@ export default async function ChallengeBoard({
       <div className="space-y-1">
         <h2 className="font-display text-lg font-medium">คำท้า</h2>
         <p className="text-sm text-muted">
-          ท้าแล้วถอนไม่ได้ ใครจะลงเพิ่มก็ได้ จบเดือนตัดสินจากระยะจริง
+          กองกลางเดียว เพื่อนเข้าร่วมฝั่งไหนก็ได้ เติม +0 ถึง +3 ขวด
+          จบเดือนฝั่งแพ้จ่ายทั้งกอง ฝั่งชนะรับทั้งกอง หารเท่ากัน
+          ไม่มีใครจ่ายเกิน {SHARE_CAP} ขวดต่อคน
         </p>
       </div>
 
@@ -512,6 +604,7 @@ export default async function ChallengeBoard({
                 <PendingCard
                   key={row.challenge_id}
                   row={row}
+                  stakes={grouped.get(row.challenge_id) ?? []}
                   readOnly={readOnly}
                 />
               ) : (
