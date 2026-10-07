@@ -622,8 +622,12 @@ function PodiumTextCell({
   const width = podiumSlotWidth(entry, first, podiumStyle, density);
   const nameSize = first ? density.podiumNameFirst : density.podiumNameSide;
   const valueSize = first ? density.podiumValueFirst : density.podiumValueSide;
+  // ให้คำโปรยตัดบรรทัดได้ถึงสามบรรทัด ของเดิมตัดเหลือบรรทัดเดียวครึ่ง
+  // ที่ 28/22 ตัวอักษร จนคำโปรยของสามคนบนโพเดียมขาดกลางประโยคแทบทุกคน
+  // เพดานตัวอักษรยังต้องมีไว้กันคำโปรยยาวผิดปกติ ส่วน lineClamp ข้างล่าง
+  // เป็นตัวกันจริงไม่ให้เกินสามบรรทัด
   const caption = density.showPodiumCaption
-    ? truncate(entry.caption, first ? 28 : 22)
+    ? truncate(entry.caption, first ? 72 : 60)
     : null;
   const small = smallLine(entry, mode);
 
@@ -695,6 +699,7 @@ function PodiumTextCell({
             color: MUTED,
             fontSize: 20,
             lineHeight: 1.3,
+            lineClamp: 3,
           }}
         >
           {caption}

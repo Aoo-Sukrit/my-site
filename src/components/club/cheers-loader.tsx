@@ -101,7 +101,7 @@ export default function CheersLoader({
   return (
     <svg
       viewBox={`0 -20 ${WIDTH} ${MUG_VIEW.height}`}
-      className={`block h-auto text-foreground ${className}`}
+      className={`block h-auto text-accent-strong ${className}`}
       aria-hidden
     >
       {/* ใบซ้าย: กลับด้านซ้ายขวาด้วย matrix ข้างใน แล้วให้ g ข้างนอกเป็นตัวขยับ

@@ -27,7 +27,8 @@ import {
  * id ของ clipPath กับ gradient เลยรับมาจากข้างนอก (ใช้ id ของสมาชิก)
  * เพราะถ้าหลายแก้วในหน้าเดียวใช้ id ซ้ำกัน เบราว์เซอร์จะไปหยิบตัวแรกมาใช้หมด
  *
- * เรื่องสี เส้นขอบอ่านจาก token ผ่าน currentColor จึงสลับตามโหมดมืดเอง
+ * เรื่องสี เส้นขอบอ่านจาก --accent-strong ผ่าน currentColor (น้ำตาลอิฐ ไม่ใช่ดำ
+ * ให้ตรงกับแก้วในรูปสตอรี่) จึงสลับตามโหมดมืดเอง
  * ส่วนฟองเบียร์ สีเบียร์ และสีริบบิ้นตรึงค่าไว้ เพราะเป็นสีของวัตถุไม่ใช่สีของธีม
  * และต้องอ่านออกเหมือนกันทั้งสองโหมด
  */
@@ -52,7 +53,7 @@ export default function BeerMug({
   return (
     <svg
       viewBox={`0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}`}
-      className="block h-auto w-full text-foreground"
+      className="block h-auto w-full text-accent-strong"
       role="img"
       aria-label={rank === null ? nickname : `อันดับ ${rank} ${nickname}`}
     >
