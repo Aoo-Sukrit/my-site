@@ -76,7 +76,7 @@ function Arrow({
   children: React.ReactNode;
 }) {
   const base =
-    "flex h-9 w-9 items-center justify-center rounded-full text-lg leading-none";
+    "flex h-11 w-11 items-center justify-center rounded-full text-lg leading-none";
 
   if (!href) {
     return (

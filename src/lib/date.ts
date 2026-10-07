@@ -36,6 +36,20 @@ export function thaiShortDate(isoDate: string): string {
   }).format(new Date(`${isoDate}T00:00:00+07:00`));
 }
 
+/**
+ * "7 ต.ค. 2569" วันที่สั้นพร้อมปี พ.ศ. ใช้วางข้างช่องเลือกวันที่
+ * ช่อง input type=date โชว์ตามภาษาเครื่อง บางเครื่องเป็น 10/07/2026
+ * อ่านแล้วงงว่าวันหรือเดือนมาก่อน บรรทัดนี้ยืนยันให้เป็นภาษาไทยอีกที
+ */
+export function thaiDateWithYear(isoDate: string): string {
+  return new Intl.DateTimeFormat("th-TH", {
+    timeZone: CLUB_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${isoDate}T00:00:00+07:00`));
+}
+
 /** วันและเวลาแบบสั้นภาษาไทย ใช้กับประวัติการแก้ */
 export function thaiDateTime(iso: string): string {
   return new Intl.DateTimeFormat("th-TH", {
@@ -159,4 +173,19 @@ export function daysLeftUntil(iso: string, from: number = Date.now()): number {
  */
 export function hasPassed(iso: string, now: number = Date.now()): boolean {
   return now >= new Date(iso).getTime();
+}
+
+/**
+ * ตอนนี้ยังไม่เลย days วันหลังเวลา iso ใช่ไหม (รวมช่วงก่อนถึง iso ด้วย)
+ * ใช้กับของที่ควรขึ้นแค่ช่วงสั้นๆ หลังเหตุการณ์ เช่นแถบประกาศผลเดือนก่อน
+ * ถ้า iso อ่านไม่ออกถือว่าเลยไปแล้ว ไม่ขึ้นอะไรค้างไว้
+ */
+export function withinDaysAfter(
+  iso: string,
+  days: number,
+  now: number = Date.now(),
+): boolean {
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return false;
+  return now < at + days * 24 * 60 * 60 * 1000;
 }

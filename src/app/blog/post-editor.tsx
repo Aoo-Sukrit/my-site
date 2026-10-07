@@ -27,7 +27,7 @@ import type { PostSection } from "@/lib/supabase/types";
 import { savePostAction, type MediaInput } from "./actions";
 
 const CHIP =
-  "inline-flex min-h-9 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition-colors";
+  "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition-colors";
 const CHIP_ON = "bg-club-line font-medium text-background";
 const CHIP_OFF =
   "border border-border text-muted hover:border-accent hover:text-foreground";
@@ -314,7 +314,7 @@ export default function PostEditor({
                     }
                     maxLength={POST_CAPTION_MAX}
                     placeholder="คำอธิบายใต้ภาพ · ไม่ใส่ก็ได้"
-                    className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
+                    className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
                   />
 
                   <div className="flex flex-wrap gap-2">
@@ -402,7 +402,7 @@ export default function PostEditor({
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">ไปอยู่ที่</legend>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {sections.map((row) => (
             <button
               key={row.slug}
@@ -475,7 +475,7 @@ function SmallButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-border px-3 text-sm text-muted transition-colors hover:border-accent hover:text-foreground disabled:opacity-40"
+      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border px-3 text-sm text-muted transition-colors hover:border-accent hover:text-foreground disabled:opacity-40"
     >
       {children}
     </button>

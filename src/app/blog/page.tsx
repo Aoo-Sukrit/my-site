@@ -34,7 +34,7 @@ function Chip({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-9 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition active:scale-95 ${
+      className={`inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition active:scale-95 ${
         active
           ? "bg-club-line font-medium text-background"
           : "border border-border text-muted hover:border-accent hover:text-foreground has-[[data-pending]]:animate-pulse has-[[data-pending]]:border-accent has-[[data-pending]]:bg-accent-soft"
@@ -137,7 +137,7 @@ export default async function BlogPage(props: PageProps<"/blog">) {
 
       {sections.length > 1 ? (
         // overflow-x-auto ให้ชิปเลื่อนแนวนอนบนมือถือ ไม่ตกบรรทัดจนรก
-        <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <Chip href="/blog" active={selected === null}>
             ทั้งหมด
           </Chip>

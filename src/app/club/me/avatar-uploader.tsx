@@ -11,7 +11,7 @@ import {
   avatarPath,
   avatarThumbPath,
 } from "@/lib/avatar-thumb";
-import { CROP_ASPECT } from "@/lib/beer-mug";
+import { CROP_ASPECT, CROP_ASPECT_LABEL } from "@/lib/beer-mug";
 import {
   MAX_UPLOAD_BYTES,
   makeAvatarThumb,
@@ -228,7 +228,7 @@ export default function AvatarUploader({
       </button>
 
       <p className="text-xs text-muted">
-        ครอปเป็นแนวตั้ง 3:4 แล้วย่อให้เองอัตโนมัติ ไม่เกิน 500KB
+        ครอปเป็นแนวตั้ง {CROP_ASPECT_LABEL} แล้วย่อให้เองอัตโนมัติ ไม่เกิน 500KB
       </p>
 
       <input

@@ -113,9 +113,10 @@ export default function WallBoard({
                         name="hidden"
                         value={message.hidden ? "false" : "true"}
                       />
+                      {/* min-h-11 ให้นิ้วจิ้มโดนง่าย -my-3 ดึงกลับไม่ให้แถวสูงขึ้นตาม */}
                       <button
                         type="submit"
-                        className="text-xs text-muted underline transition-colors hover:text-foreground"
+                        className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs text-muted underline transition-colors hover:text-foreground"
                       >
                         {message.hidden ? "เลิกซ่อน" : "ซ่อน"}
                       </button>

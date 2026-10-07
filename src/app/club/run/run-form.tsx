@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Alert from "@/components/club/alert";
-import { thaiMonthLabel } from "@/lib/date";
+import { thaiDateWithYear, thaiMonthLabel } from "@/lib/date";
 import { MAX_UPLOAD_BYTES, shrinkToJpeg } from "@/lib/image";
 import {
   DISTANCE_MAX_KM,
@@ -195,7 +195,16 @@ export default function RunForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <label className="block space-y-1.5">
-        <span className="text-sm font-medium">วันที่วิ่ง</span>
+        {/* วันที่แบบไทยข้างหัวข้อ ช่องวันที่ของเบราว์เซอร์โชว์ตามภาษาเครื่อง
+            ซึ่งบางเครื่องเป็นเลขล้วนแบบฝรั่ง */}
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium">วันที่วิ่ง</span>
+          {/^\d{4}-\d{2}-\d{2}$/.test(ranOn) ? (
+            <span className="text-sm text-accent-strong">
+              {thaiDateWithYear(ranOn)}
+            </span>
+          ) : null}
+        </span>
         <input
           type="date"
           value={ranOn}

@@ -15,6 +15,7 @@ import {
   hasPassed,
   thaiDateTimeLong,
   thaiMonthLabel,
+  withinDaysAfter,
 } from "@/lib/date";
 import { monthKeyOf, monthRange, previousMonthKey } from "@/lib/run-rules";
 import {
@@ -27,10 +28,11 @@ import { getRoundPrizes } from "@/lib/prizes";
 import { roundPhase } from "@/lib/target-rules";
 import { getPercentBoard } from "@/lib/targets";
 
+import DismissibleBanner from "./dismissible-banner";
+import LogRunButton from "./log-run-button";
 import MonthPicker from "./month-picker";
 import RewardsTab from "./rewards";
 import {
-  LogRunButton,
   PercentList,
   PercentPodium,
   Podium,
@@ -41,6 +43,58 @@ import {
 export const metadata: Metadata = {
   title: "BEER NOW RUN LATER",
 };
+
+/** แถบ "ผลเดือนที่แล้วออกแล้ว" อยู่กี่วันหลังเวลาตัดสินของเดือนนั้น */
+const LAST_MONTH_BANNER_DAYS = 3;
+
+/**
+ * แถบประกาศเตี้ยๆ บนหน้ากระดาน กดทั้งแถบเพื่อไปหน้านั้น
+ *   loud   พื้นครีมขอบเข้ม ใช้กับเรื่องที่ต้องลงมือ (มีคนท้า ตั้งเป้า)
+ *   plain  พื้นขาวขอบบาง ใช้กับเรื่องที่แค่แจ้งให้รู้
+ * closable เว้นที่ด้านขวาให้ปุ่ม × ของ DismissibleBanner แทนลูกศร
+ */
+function Notice({
+  href,
+  tone,
+  title,
+  detail,
+  closable = false,
+}: {
+  href: string;
+  tone: "loud" | "plain";
+  title: string;
+  detail: string;
+  closable?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex min-h-14 items-center justify-between gap-3 rounded-2xl py-2.5 pl-4 transition active:scale-[0.99] ${
+        closable ? "pr-14" : "pr-4"
+      } ${
+        tone === "loud"
+          ? "border-2 border-club-line bg-club-cream text-club-ink hover:opacity-90"
+          : "border border-border bg-surface hover:border-accent"
+      }`}
+    >
+      <span className="min-w-0">
+        <span className="block truncate font-display text-[15px] leading-snug font-semibold">
+          {title}
+        </span>
+        <span
+          className={`block truncate text-xs ${tone === "loud" ? "" : "text-muted"}`}
+        >
+          {detail}
+        </span>
+      </span>
+      {closable ? null : (
+        <span aria-hidden className="shrink-0 text-lg">
+          →
+        </span>
+      )}
+    </Link>
+  );
+}
 
 /** "1–31 ตุลาคม 2569" */
 function periodLabel(month: string) {
@@ -105,9 +159,15 @@ export default async function ClubPage(props: PageProps<"/club">) {
   // แถบชวนไปดูผลของเดือนที่แล้ว ขึ้นเฉพาะตอนดูเดือนปัจจุบัน
   // และเฉพาะเดือนที่มีรางวัลหรือคำท้าอยู่จริง ไม่งั้นกดไปก็เจอหน้าว่าง
   const lastMonthKey = previousMonthKey(currentMonthKey);
-  const lastMonthExists = months.some(
+  const lastMonthRow = months.find(
     (row) => row.month.slice(0, 7) === lastMonthKey,
   );
+  // แถบประกาศผลเดือนก่อนอยู่แค่ LAST_MONTH_BANNER_DAYS วันหลังเวลาตัดสิน
+  // (results_at) แล้วหายไปเอง ไม่ต้องค้างทั้งเดือนจนคนเลิกอ่าน
+  // ช่วงก่อนตัดสิน (ปกติแค่ครึ่งวันแรกของเดือน) ยังขึ้นเป็น "รอผลวิ่งย้อนหลัง"
+  const lastMonthExists =
+    lastMonthRow !== undefined &&
+    withinDaysAfter(lastMonthRow.results_at, LAST_MONTH_BANNER_DAYS);
 
   // สี่อย่างนี้ไม่ต้องรอกัน ยิงพร้อมกันทีเดียว ของเดิมรอทีละตัวจนหน้าแรก
   // ช้าเท่าผลรวมของทุกคำถาม ตอนนี้ช้าเท่าตัวที่ช้าที่สุดตัวเดียว
@@ -135,6 +195,12 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const myPendingChallenges =
     round && isCurrentMonth ? pendingForMe(roundChallenges) : [];
 
+  // แถบตั้งเป้า/เปิดผลเป้า มีของเดือนปัจจุบันตลอดทั้งเดือน
+  const showTargetNotice =
+    round !== null &&
+    isCurrentMonth &&
+    (phase === "open" || phase === "revealed");
+
   /** ลิงก์แท็บที่พาเดือนที่เลือกไปด้วย เดือนปัจจุบันไม่ต้องใส่ month */
   const tabHref = (tab: "percent" | "rewards" | null) => {
     const parts: string[] = [];
@@ -148,8 +214,9 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const groupTotal = ranked.reduce((sum, row) => sum + Number(row.total_km), 0);
 
   return (
-    // pb เผื่อที่ให้ปุ่มลอย ไม่ให้ไปบังเนื้อหาบรรทัดสุดท้าย
-    <div className="space-y-8 pb-28">
+    // pb เผื่อที่ให้ปุ่มลอย (สูง 56 + ห่างขอบ 20 + แถบ home ของ iPhone)
+    // ไม่ให้ไปบังแถวสุดท้ายของรายการกับแถบรวมทั้งกลุ่ม
+    <div className="space-y-6 pb-36">
       {params.saved ? <Alert tone="success">บันทึกผลวิ่งแล้ว</Alert> : null}
       {typeof params.err === "string" ? (
         <Alert tone="error">{params.err}</Alert>
@@ -158,126 +225,106 @@ export default async function ClubPage(props: PageProps<"/club">) {
         <Alert tone="success">{params.msg}</Alert>
       ) : null}
 
-      {lastMonth ? (
-        <Link
-          href={`/club?month=${lastMonth.monthKey}&board=rewards`}
-          className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 transition hover:border-accent"
-        >
-          <span>
-            <span className="block text-sm font-medium">
-              {lastMonth.settled
-                ? `ผลเดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ออกแล้ว`
-                : `เดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ยังรอผลวิ่งย้อนหลัง`}
-            </span>
-            <span className="block text-xs text-muted">
-              {lastMonth.settled
-                ? "ดูใครได้อะไร"
-                : `ตัดสิน ${thaiDateTimeLong(lastMonth.settleAt)}`}
-            </span>
-          </span>
-          <span aria-hidden className="text-xl text-muted">
-            →
-          </span>
-        </Link>
+      {/* ส่วนหัวแบบแถวเดียว: โลโก้เล็กชิดซ้าย ชื่อกับช่วงเดือนอยู่ขวา
+          ของเดิมวางโลโก้ใหญ่กลางจอทีละบรรทัด บวกแถบประกาศตัวโต
+          จนบนจอ 375×812 ต้องเลื่อนลงก่อนถึงจะเห็นแก้วเบียร์บนโพเดียม */}
+      <header className="flex items-center gap-3">
+        <ClubLogo className="w-14 shrink-0 rounded-xl" sizes="56px" eager />
+        <div className="min-w-0">
+          <h1 className="font-display text-lg leading-tight font-semibold tracking-tight sm:text-xl">
+            BEER NOW RUN LATER
+          </h1>
+          <p className="text-xs text-muted sm:text-sm">
+            {round ? periodLabel(round.month) : "ยังไม่มีรอบของเดือนนี้"} ·{" "}
+            {board.length} คน
+          </p>
+        </div>
+      </header>
+
+      {/* แถบประกาศทั้งหมดอยู่ก้อนเดียว ชิดกันกว่าระยะห่างของส่วนอื่น
+          และเตี้ยลงเหลือบรรทัดหัวข้อกับบรรทัดรองตัวเล็ก */}
+      {lastMonth || myPendingChallenges.length > 0 || showTargetNotice ? (
+        <div className="space-y-2">
+          {lastMonth ? (
+            <DismissibleBanner
+              storageKey={`club:last-month-banner:${lastMonth.monthKey}`}
+              label="ปิดแถบนี้"
+            >
+              <Notice
+                href={`/club?month=${lastMonth.monthKey}&board=rewards`}
+                tone="plain"
+                title={
+                  lastMonth.settled
+                    ? `ผลเดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ออกแล้ว`
+                    : `เดือน${thaiMonthLabel(`${lastMonth.monthKey}-01`)}ยังรอผลวิ่งย้อนหลัง`
+                }
+                detail={
+                  lastMonth.settled
+                    ? "ดูใครได้อะไร"
+                    : `ตัดสิน ${thaiDateTimeLong(lastMonth.settleAt)}`
+                }
+                // เว้นที่ขวาไว้ให้ปุ่ม × ไม่มีลูกศร
+                closable
+              />
+            </DismissibleBanner>
+          ) : null}
+
+          {myPendingChallenges.length > 0 ? (
+            <Notice
+              href="/club?board=rewards"
+              tone="loud"
+              title={`มีคนท้าคุณ ${myPendingChallenges.length} คำท้า`}
+              detail="รอคุณกดรับ"
+            />
+          ) : null}
+
+          {round && isCurrentMonth && phase === "open" ? (
+            <Notice
+              href="/club/target"
+              tone="loud"
+              title="ตั้งเป้าเดือนนี้ได้แล้ว"
+              detail={`ปิดรับ ${thaiDateTimeLong(round.target_locks_at)}`}
+            />
+          ) : null}
+
+          {/* พอเปิดผลแล้วแถบตั้งเป้าหายไป ทำให้ไม่มีทางไปดูผลจากหน้านี้เลย
+              แถบนี้มาแทน อยู่จนหมดเดือน เพราะ round คือรอบของเดือนปัจจุบัน */}
+          {round && isCurrentMonth && phase === "revealed" ? (
+            <Notice
+              href="/club?board=rewards"
+              tone="loud"
+              title="เปิดผลเป้าแล้ว"
+              detail="ดูว่าใครปรับเป้าใคร"
+            />
+          ) : null}
+        </div>
       ) : null}
 
-      {myPendingChallenges.length > 0 ? (
-        <Link
-          href="/club?board=rewards"
-          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
-        >
-          <span>
-            <span className="block font-display text-base font-semibold">
-              มีคนท้าคุณ {myPendingChallenges.length} คำท้า
-            </span>
-            <span className="block text-sm">รอคุณกดรับ</span>
-          </span>
-          <span aria-hidden className="text-xl">
-            →
-          </span>
-        </Link>
-      ) : null}
-
-      <header className="space-y-3 text-center">
-        <ClubLogo
-          className="mx-auto w-24 rounded-2xl sm:w-28"
-          sizes="(min-width: 640px) 112px, 96px"
-          eager
-        />
-        <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-          BEER NOW RUN LATER
-        </h1>
-        <p className="text-xs text-muted sm:text-sm">
-          {round ? periodLabel(round.month) : "ยังไม่มีรอบของเดือนนี้"} ·{" "}
-          {board.length} คน
-        </p>
-
+      <div className="space-y-3">
         <MonthPicker
           months={months}
           selected={selectedMonth}
           currentMonthKey={currentMonthKey}
           board={boardTab === "distance" ? null : boardTab}
         />
-      </header>
 
-      {round && isCurrentMonth && phase === "open" ? (
-        <Link
-          href="/club/target"
-          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
-        >
-          <span>
-            <span className="block font-display text-base font-semibold">
-              ตั้งเป้าเดือนนี้ได้แล้ว
-            </span>
-            <span className="block text-sm">
-              ปิดรับ {thaiDateTimeLong(round.target_locks_at)}
-            </span>
-          </span>
-          <span aria-hidden className="text-xl">
-            →
-          </span>
-        </Link>
-      ) : null}
-
-      {/* พอเปิดผลแล้วแถบตั้งเป้าหายไป ทำให้ไม่มีทางไปดูผลจากหน้านี้เลย
-          แถบนี้มาแทน อยู่จนหมดเดือน เพราะ round คือรอบของเดือนปัจจุบัน */}
-      {round && isCurrentMonth && phase === "revealed" ? (
-        <Link
-          href="/club?board=rewards"
-          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-club-line bg-club-cream px-5 py-4 text-club-ink transition hover:opacity-90"
-        >
-          <span>
-            <span className="block font-display text-base font-semibold">
-              เปิดผลเป้าแล้ว
-            </span>
-            <span className="block text-sm">ดูว่าใครปรับเป้าใคร</span>
-          </span>
-          <span aria-hidden className="text-xl">
-            →
-          </span>
-        </Link>
-      ) : null}
-
-      {/* สลับกระดานด้วย query string ไม่ต้องใช้ JS ฝั่งเบราว์เซอร์เลย */}
-      <nav className="flex gap-1 rounded-full border border-border p-1">
-        <BoardTab href={tabHref(null)} active={boardTab === "distance"}>
-          ระยะรวม
-        </BoardTab>
-        <BoardTab href={tabHref("percent")} active={boardTab === "percent"}>
-          % ของเป้า
-        </BoardTab>
-        <BoardTab href={tabHref("rewards")} active={boardTab === "rewards"}>
-          รางวัล
-        </BoardTab>
-      </nav>
+        {/* สลับกระดานด้วย query string ไม่ต้องใช้ JS ฝั่งเบราว์เซอร์เลย */}
+        <nav className="flex gap-1 rounded-full border border-border p-1">
+          <BoardTab href={tabHref(null)} active={boardTab === "distance"}>
+            ระยะรวม
+          </BoardTab>
+          <BoardTab href={tabHref("percent")} active={boardTab === "percent"}>
+            % ของเป้า
+          </BoardTab>
+          <BoardTab href={tabHref("rewards")} active={boardTab === "rewards"}>
+            รางวัล
+          </BoardTab>
+        </nav>
+      </div>
 
       {boardTab === "rewards" ? (
         round ? (
-          <RewardsTab
-            round={round}
-            monthKey={monthArg}
-            readOnly={readOnly}
-          />
+          <RewardsTab round={round} monthKey={monthArg} readOnly={readOnly} />
         ) : (
           <p className="text-sm text-muted">ยังไม่มีรอบของเดือนนี้</p>
         )

@@ -59,18 +59,24 @@ function RunningPanel({ stats }: { stats: RunningStats }) {
       </div>
 
       {months.length > 0 ? (
-        <div className="flex h-28 items-end gap-1.5">
+        <div className="flex h-28 gap-1.5">
           {months.map((row) => (
             <div
               key={row.month}
-              className="flex min-w-0 flex-1 flex-col items-center gap-1"
+              className="flex h-full min-w-0 flex-1 flex-col items-center gap-1"
               title={`${shortMonth(row.month)} ${formatKm(row.km)} กม.`}
             >
-              <span
-                className="w-full rounded-t-md bg-accent-soft"
-                style={{ height: `${barHeight(Number(row.km), max)}%` }}
-              />
-              <span className="truncate text-[10px] text-muted">
+              {/* ช่องแท่งต้องมีความสูงจริง (flex-1 ของคอลัมน์ที่สูงเต็ม h-28)
+                  ความสูงแบบ % ของแท่งถึงจะมีอะไรให้อ้างอิง ของเดิมคอลัมน์สูงตาม
+                  เนื้อหา แท่งจึงสูง 0 แล้วหายไปทั้งกราฟ เหลือแต่ชื่อเดือน */}
+              <span className="flex w-full flex-1 items-end">
+                <span
+                  className="w-full rounded-t-md bg-accent-soft"
+                  style={{ height: `${barHeight(Number(row.km), max)}%` }}
+                />
+              </span>
+              {/* 11px คือขั้นต่ำที่ยังอ่านชื่อเดือนย่อภาษาไทยออกบนมือถือ */}
+              <span className="truncate text-[11px] text-muted">
                 {shortMonth(row.month)}
               </span>
             </div>
@@ -104,7 +110,7 @@ export default async function SectionPage(props: PageProps<"/about/[slug]">) {
     <div className="space-y-8">
       <Link
         href="/about"
-        className="inline-flex text-sm text-muted transition-colors hover:text-foreground"
+        className="inline-flex min-h-11 items-center pr-3 text-sm text-muted transition-colors hover:text-foreground"
       >
         ← {section.kind === "work" ? "งานที่ภูมิใจ" : "งานอดิเรก"}
       </Link>

@@ -119,7 +119,7 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
   const percentRow = percentBoard.find((row) => row.member_id === id);
 
   const percentCell = !revealed
-    ? { value: "รอเปิดผล", label: "% ของเป้า" }
+    ? { value: "รอเปิดผล", label: "% ของเป้า", pending: true }
     : percentRow?.percent
       ? {
           value: formatPercent(percentRow.percent),
@@ -140,7 +140,7 @@ export default async function MemberPage(props: PageProps<"/club/member/[id]">) 
         <div className="flex justify-end">
           <Link
             href="/club/me"
-            className="inline-flex min-h-10 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
+            className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
           >
             แก้โปรไฟล์
           </Link>

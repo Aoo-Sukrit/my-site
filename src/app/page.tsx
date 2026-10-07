@@ -41,7 +41,7 @@ export default async function HomePage() {
         <div className="flex justify-end">
           <Link
             href="/home/edit"
-            className="inline-flex min-h-10 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
+            className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
           >
             แก้หน้านี้
           </Link>

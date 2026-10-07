@@ -9,6 +9,8 @@ import {
   MUG_INNER,
   MUG_PHOTO_BOX,
   MUG_PRINT,
+  MUG_RIM,
+  MUG_RIM_SPAN,
   MUG_RIBBON_COLOR,
   MUG_RIBBON_FONT,
   MUG_RIBBON_LABEL,
@@ -294,8 +296,14 @@ function mugSvg(avatar: string | null, rankNo: number): string {
     `<stop offset="0%" stop-color="${MUG_BEER.top}"/>`,
     `<stop offset="55%" stop-color="${MUG_BEER.mid}"/>`,
     `<stop offset="100%" stop-color="${MUG_BEER.bottom}"/>`,
+    `</linearGradient>`,
+    // ขอบทองไล่เฉด resvg วาด gradient บน stroke ได้ จึงใช้ชุดเดียวกับเว็บตรงๆ
+    `<linearGradient id="rim" gradientUnits="userSpaceOnUse" x1="0" y1="${MUG_RIM_SPAN.y1}" x2="0" y2="${MUG_RIM_SPAN.y2}">`,
+    `<stop offset="0%" stop-color="${MUG_RIM.top}"/>`,
+    `<stop offset="55%" stop-color="${MUG_RIM.mid}"/>`,
+    `<stop offset="100%" stop-color="${MUG_RIM.bottom}"/>`,
     `</linearGradient></defs>`,
-    `<path d="${MUG_HANDLE_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_HANDLE_STROKE}"/>`,
+    `<path d="${MUG_HANDLE_PATH}" fill="none" stroke="url(#rim)" stroke-width="${MUG_HANDLE_STROKE}"/>`,
     avatar
       ? `<image xlink:href="${avatar}" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" preserveAspectRatio="xMidYMin slice" clip-path="url(#body)"/>`
       : [
@@ -305,10 +313,10 @@ function mugSvg(avatar: string | null, rankNo: number): string {
               `<circle cx="${bubble.cx}" cy="${bubble.cy}" r="${bubble.r}" fill="${MUG_BEER.bubble}" opacity="0.55" clip-path="url(#body)"/>`,
           ),
         ].join(""),
-    `<path d="${MUG_BODY_PATH}" fill="none" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
-    `<path d="${MUG_FOAM_PATH}" fill="${MUG_PRINT.foam}" stroke="${MUG_PRINT.outline}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
+    `<path d="${MUG_BODY_PATH}" fill="none" stroke="url(#rim)" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
+    `<path d="${MUG_FOAM_PATH}" fill="${MUG_PRINT.foam}" stroke="${MUG_RIM.foam}" stroke-width="${MUG_STROKE}" stroke-linejoin="round"/>`,
     ribbon
-      ? `<path d="${MUG_RIBBON_PATH}" fill="${ribbon.fill}" stroke="${MUG_PRINT.outline}" stroke-width="2.5" stroke-linejoin="round"/>`
+      ? `<path d="${MUG_RIBBON_PATH}" fill="${ribbon.fill}" stroke="${MUG_RIM.ribbonStroke}" stroke-width="2.5" stroke-linejoin="round"/>`
       : ``,
     `</svg>`,
   ].join("");

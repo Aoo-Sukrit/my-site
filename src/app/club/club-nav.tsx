@@ -79,7 +79,7 @@ export default function ClubNav({
       style={{ viewTransitionName: "club-nav" }}
       className="sticky top-[var(--site-header-h,3.5rem)] z-10 -mx-5 -mt-10 mb-6 border-b border-border bg-background/85 px-5 backdrop-blur sm:-mt-14 sm:mb-8"
     >
-      <div className="mx-auto flex w-full max-w-2xl items-center gap-1.5 py-2">
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-1.5 py-1">
         {/* ชิปสามใบพอดีจอ 375px อยู่แล้ว overflow-x-auto เผื่อไว้สำหรับเครื่อง
             ที่ตั้งฟอนต์ใหญ่กว่าปกติ ซึ่งจะทำให้ล้นได้ no-scrollbar ซ่อนแถบเลื่อน
             ที่ไม่งั้นจะโผล่เป็นเส้นใต้แถว แต่ยังปัดเลื่อนได้ตามปกติ */}
@@ -93,7 +93,7 @@ export default function ClubNav({
                   <Link
                     href={chip.href}
                     aria-current={active ? "page" : undefined}
-                    className={`block rounded-full px-2.5 py-1.5 text-sm whitespace-nowrap transition active:scale-95 ${
+                    className={`flex min-h-11 items-center rounded-full px-2.5 text-sm whitespace-nowrap transition active:scale-95 ${
                       active
                         ? "bg-accent-soft font-medium text-accent"
                         : "text-muted hover:bg-accent-soft hover:text-foreground"

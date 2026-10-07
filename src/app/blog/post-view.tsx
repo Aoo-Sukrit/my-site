@@ -70,7 +70,7 @@ export default function PostView({
       {viaToken ? null : (
         <Link
           href={home.href}
-          className="inline-flex text-sm text-muted transition-colors hover:text-foreground"
+          className="inline-flex min-h-11 items-center pr-3 text-sm text-muted transition-colors hover:text-foreground"
         >
           ← {home.label}
         </Link>

@@ -13,6 +13,8 @@ import {
   MUG_RIBBON_LABEL,
   MUG_RIBBON_PATH,
   MUG_RIBBON_TEXT,
+  MUG_RIM,
+  MUG_RIM_SPAN,
   MUG_STROKE,
   MUG_VIEW,
 } from "@/lib/beer-mug";
@@ -27,10 +29,10 @@ import {
  * id ของ clipPath กับ gradient เลยรับมาจากข้างนอก (ใช้ id ของสมาชิก)
  * เพราะถ้าหลายแก้วในหน้าเดียวใช้ id ซ้ำกัน เบราว์เซอร์จะไปหยิบตัวแรกมาใช้หมด
  *
- * เรื่องสี เส้นขอบอ่านจาก --accent-strong ผ่าน currentColor (น้ำตาลอิฐ ไม่ใช่ดำ
- * ให้ตรงกับแก้วในรูปสตอรี่) จึงสลับตามโหมดมืดเอง
- * ส่วนฟองเบียร์ สีเบียร์ และสีริบบิ้นตรึงค่าไว้ เพราะเป็นสีของวัตถุไม่ใช่สีของธีม
- * และต้องอ่านออกเหมือนกันทั้งสองโหมด
+ * เรื่องสี ขอบแก้วเป็นทองไล่เฉดจาก MUG_RIM ชุดเดียวกับรูปสตอรี่ ไม่ได้อ่าน
+ * currentColor แล้ว เพราะเป็นสีของแก้ว ไม่ใช่สีของธีม ทองบนพื้นครีมและพื้นเข้ม
+ * อ่านออกทั้งคู่ สีเบียร์กับสีริบบิ้นก็ตรึงค่าด้วยเหตุผลเดียวกัน
+ * ไส้ของก้อนฟองยังเป็น club-cream เหมือนเดิม
  */
 export default function BeerMug({
   uid,
@@ -47,13 +49,14 @@ export default function BeerMug({
 }) {
   const clipId = `mug-body-${uid}`;
   const beerId = `mug-beer-${uid}`;
+  const rimId = `mug-rim-${uid}`;
   const ribbon = rank === null ? undefined : MUG_RIBBON_COLOR[rank];
   const label = rank === null ? undefined : MUG_RIBBON_LABEL[rank];
 
   return (
     <svg
       viewBox={`0 0 ${MUG_VIEW.width} ${MUG_VIEW.height}`}
-      className="block h-auto w-full text-accent-strong"
+      className="block h-auto w-full"
       role="img"
       aria-label={rank === null ? nickname : `อันดับ ${rank} ${nickname}`}
     >
@@ -66,13 +69,27 @@ export default function BeerMug({
           <stop offset="55%" stopColor={MUG_BEER.mid} />
           <stop offset="100%" stopColor={MUG_BEER.bottom} />
         </linearGradient>
+        {/* userSpaceOnUse ให้หูจับกับตัวแก้วไล่เฉดต่อกันเป็นสีเดียว
+            (ดูเหตุผลที่ MUG_RIM_SPAN) */}
+        <linearGradient
+          id={rimId}
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          y1={MUG_RIM_SPAN.y1}
+          x2="0"
+          y2={MUG_RIM_SPAN.y2}
+        >
+          <stop offset="0%" stopColor={MUG_RIM.top} />
+          <stop offset="55%" stopColor={MUG_RIM.mid} />
+          <stop offset="100%" stopColor={MUG_RIM.bottom} />
+        </linearGradient>
       </defs>
 
       {/* หูจับอยู่หลังตัวแก้ว ตัวแก้วจะทับรอยต่อให้เอง */}
       <path
         d={MUG_HANDLE_PATH}
         fill="none"
-        stroke="currentColor"
+        stroke={`url(#${rimId})`}
         strokeWidth={MUG_HANDLE_STROKE}
       />
 
@@ -122,14 +139,14 @@ export default function BeerMug({
       <path
         d={MUG_BODY_PATH}
         fill="none"
-        stroke="currentColor"
+        stroke={`url(#${rimId})`}
         strokeWidth={MUG_STROKE}
         strokeLinejoin="round"
       />
       <path
         d={MUG_FOAM_PATH}
         className="fill-club-cream"
-        stroke="currentColor"
+        stroke={MUG_RIM.foam}
         strokeWidth={MUG_STROKE}
         strokeLinejoin="round"
       />
@@ -139,7 +156,7 @@ export default function BeerMug({
           <path
             d={MUG_RIBBON_PATH}
             fill={ribbon.fill}
-            stroke="currentColor"
+            stroke={MUG_RIM.ribbonStroke}
             strokeWidth={2.5}
             strokeLinejoin="round"
           />

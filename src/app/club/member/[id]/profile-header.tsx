@@ -81,7 +81,9 @@ export default function ProfileHeader({
 
         <div className="min-w-0 flex-1 space-y-1.5 pb-1">
           {rankNo !== null && monthLabel ? (
-            <p className="inline-flex items-baseline gap-1.5 rounded-full bg-club-ink px-3 py-1 text-xs text-club-cream">
+            // whitespace-nowrap: ป้ายนี้ต้องอยู่บรรทัดเดียวเสมอ ชื่อเดือนยาวอย่าง
+            // "พฤศจิกายน" เคยดันให้ "· เดือน" ตกลงไปบรรทัดใหม่ในป้ายทรงแคปซูล
+            <p className="inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-club-ink px-3 py-1 text-xs text-club-cream">
               <span>อันดับ</span>
               <span className="font-display text-sm font-semibold text-club-gold">
                 {rankNo}

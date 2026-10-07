@@ -7,6 +7,8 @@ import {
   MUG_FOAM_PATH,
   MUG_HANDLE_PATH,
   MUG_HANDLE_STROKE,
+  MUG_RIM,
+  MUG_RIM_SPAN,
   MUG_STROKE,
   MUG_VIEW,
 } from "@/lib/beer-mug";
@@ -20,6 +22,9 @@ import {
  * (หาคำว่า cheers)
  *
  * คนที่ตั้งเครื่องไว้ว่าไม่อยากเห็นของขยับ จะเห็นแก้วสองใบตั้งนิ่งๆ
+ *
+ * ขอบแก้วเป็นทองไล่เฉด MUG_RIM ชุดเดียวกับโพเดียม ฟองที่กระเด็นใช้ขอบสีฟอง
+ * (MUG_RIM.foam) ให้ดูเป็นฟองที่หลุดออกมาจากแก้วจริง
  */
 
 /** ระยะห่างจากขอบซ้ายของรูปถึงแก้วแต่ละใบ เว้นช่องกลางไว้ให้เอียงเข้ามาชนได้ */
@@ -40,6 +45,7 @@ const SPLASH = [
 function Mug({ uid }: { uid: string }) {
   const clipId = `${uid}-clip`;
   const beerId = `${uid}-beer`;
+  const rimId = `${uid}-rim`;
 
   return (
     <>
@@ -52,11 +58,23 @@ function Mug({ uid }: { uid: string }) {
           <stop offset="55%" stopColor={MUG_BEER.mid} />
           <stop offset="100%" stopColor={MUG_BEER.bottom} />
         </linearGradient>
+        <linearGradient
+          id={rimId}
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          y1={MUG_RIM_SPAN.y1}
+          x2="0"
+          y2={MUG_RIM_SPAN.y2}
+        >
+          <stop offset="0%" stopColor={MUG_RIM.top} />
+          <stop offset="55%" stopColor={MUG_RIM.mid} />
+          <stop offset="100%" stopColor={MUG_RIM.bottom} />
+        </linearGradient>
       </defs>
       <path
         d={MUG_HANDLE_PATH}
         fill="none"
-        stroke="currentColor"
+        stroke={`url(#${rimId})`}
         strokeWidth={MUG_HANDLE_STROKE}
       />
       <path d={MUG_BODY_PATH} fill={`url(#${beerId})`} />
@@ -76,14 +94,14 @@ function Mug({ uid }: { uid: string }) {
       <path
         d={MUG_BODY_PATH}
         fill="none"
-        stroke="currentColor"
+        stroke={`url(#${rimId})`}
         strokeWidth={MUG_STROKE}
         strokeLinejoin="round"
       />
       <path
         d={MUG_FOAM_PATH}
         className="fill-club-cream"
-        stroke="currentColor"
+        stroke={MUG_RIM.foam}
         strokeWidth={MUG_STROKE}
         strokeLinejoin="round"
       />
@@ -101,7 +119,7 @@ export default function CheersLoader({
   return (
     <svg
       viewBox={`0 -20 ${WIDTH} ${MUG_VIEW.height}`}
-      className={`block h-auto text-accent-strong ${className}`}
+      className={`block h-auto ${className}`}
       aria-hidden
     >
       {/* ใบซ้าย: กลับด้านซ้ายขวาด้วย matrix ข้างใน แล้วให้ g ข้างนอกเป็นตัวขยับ
@@ -128,7 +146,7 @@ export default function CheersLoader({
             cx={CLINK.x}
             cy={CLINK.y}
             r={drop.r}
-            stroke="currentColor"
+            stroke={MUG_RIM.foam}
             strokeWidth={1.5}
             className="cheers-splash fill-club-cream"
             style={

@@ -73,7 +73,7 @@ function ProfileCard({ profile }: { profile: AboutProfile }) {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm tracking-wide transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm tracking-wide transition-colors ${
                 link.primary
                   ? "bg-club-line font-medium text-background hover:opacity-90"
                   : "border border-border text-muted hover:border-accent hover:text-foreground"
@@ -199,7 +199,7 @@ export default async function AboutPage() {
         <div className="flex justify-end">
           <Link
             href="/about/edit"
-            className="inline-flex min-h-10 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
+            className="inline-flex min-h-11 items-center rounded-full border border-club-line px-4 text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft"
           >
             แก้หน้านี้
           </Link>

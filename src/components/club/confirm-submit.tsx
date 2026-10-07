@@ -38,7 +38,9 @@ export default function ConfirmSubmit({
         onClick={() => setArmed(true)}
         className={
           compact
-            ? "text-xs text-muted underline transition-colors hover:text-foreground"
+            ? // พื้นที่กด 44px ตามขนาดนิ้ว แต่ตัวหนังสือเล็กเท่าเดิม
+              // -my-3 ดึงขอบบนล่างกลับ แถวที่ปุ่มนี้อยู่จะได้ไม่สูงขึ้นตาม
+              "-my-3 inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs text-muted underline transition-colors hover:text-foreground"
             : "inline-flex min-h-11 items-center justify-center rounded-full border border-club-line px-5 text-sm font-medium tracking-wide text-club-line transition-colors hover:bg-accent-soft"
         }
       >

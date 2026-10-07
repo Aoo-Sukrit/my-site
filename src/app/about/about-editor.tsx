@@ -30,7 +30,7 @@ import {
 const FIELD =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 const SMALL_FIELD =
-  "min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
+  "min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 type SectionDraft = SectionValues & {
   /** URL ที่เอาไว้โชว์ตอนนี้ ไม่ได้ส่งลงฐานข้อมูล */
@@ -365,7 +365,7 @@ export default function AboutEditor({
           <button
             type="button"
             onClick={() => setChips((list) => [...list, ""])}
-            className="inline-flex min-h-10 items-center rounded-full border border-dashed border-club-line px-4 text-sm text-club-line"
+            className="inline-flex min-h-11 items-center rounded-full border border-dashed border-club-line px-4 text-sm text-club-line"
           >
             + เพิ่มชิป
           </button>
@@ -448,7 +448,7 @@ export default function AboutEditor({
             onClick={() =>
               setStats((list) => [...list, { value: "", label: "" }])
             }
-            className="inline-flex min-h-10 items-center rounded-full border border-dashed border-club-line px-4 text-sm text-club-line"
+            className="inline-flex min-h-11 items-center rounded-full border border-dashed border-club-line px-4 text-sm text-club-line"
           >
             + เพิ่มตัวเลข
           </button>
@@ -516,7 +516,7 @@ export default function AboutEditor({
                   type="button"
                   disabled={index === 0}
                   onClick={() => moveSection(index, -1)}
-                  className="min-h-9 min-w-9 rounded-full border border-border text-sm text-muted disabled:opacity-40"
+                  className="min-h-11 min-w-11 rounded-full border border-border text-sm text-muted disabled:opacity-40"
                 >
                   ↑
                 </button>
@@ -524,11 +524,11 @@ export default function AboutEditor({
                   type="button"
                   disabled={index === drafts.length - 1}
                   onClick={() => moveSection(index, 1)}
-                  className="min-h-9 min-w-9 rounded-full border border-border text-sm text-muted disabled:opacity-40"
+                  className="min-h-11 min-w-11 rounded-full border border-border text-sm text-muted disabled:opacity-40"
                 >
                   ↓
                 </button>
-                <label className="inline-flex min-h-9 items-center gap-2 text-sm text-muted">
+                <label className="inline-flex min-h-11 items-center gap-2 text-sm text-muted">
                   <input
                     type="checkbox"
                     checked={row.hidden}
