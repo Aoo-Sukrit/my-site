@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import Alert from "@/components/club/alert";
+import LinkPending from "@/components/link-pending";
 import { getViewer } from "@/lib/auth";
 import { thaiShortDate } from "@/lib/date";
 import { excerpt, postBadge, youTubeThumb } from "@/lib/post-rules";
@@ -33,13 +34,14 @@ function Chip({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-9 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition-colors ${
+      className={`inline-flex min-h-9 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition active:scale-95 ${
         active
           ? "bg-club-line font-medium text-background"
-          : "border border-border text-muted hover:border-accent hover:text-foreground"
+          : "border border-border text-muted hover:border-accent hover:text-foreground has-[[data-pending]]:animate-pulse has-[[data-pending]]:border-accent has-[[data-pending]]:bg-accent-soft"
       }`}
     >
       {children}
+      <LinkPending />
     </Link>
   );
 }
@@ -61,7 +63,7 @@ function Card({ post }: { post: PostCard }) {
     <li>
       <Link
         href={`/blog/${post.id}`}
-        className="flex gap-4 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
+        className="flex gap-4 rounded-2xl border border-border bg-surface p-4 transition hover:border-accent active:scale-[0.99]"
       >
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element

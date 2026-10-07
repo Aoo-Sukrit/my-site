@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import LinkPending from "@/components/link-pending";
 import { thaiMonthLabel } from "@/lib/date";
 import type { RoundMonth } from "@/lib/supabase/types";
 
@@ -89,9 +90,10 @@ function Arrow({
     <Link
       href={href}
       aria-label={label}
-      className={`${base} text-muted transition-colors hover:bg-accent-soft hover:text-foreground`}
+      className={`${base} text-muted transition hover:bg-accent-soft hover:text-foreground active:scale-90 has-[[data-pending]]:animate-pulse has-[[data-pending]]:bg-accent-soft`}
     >
       {children}
+      <LinkPending />
     </Link>
   );
 }

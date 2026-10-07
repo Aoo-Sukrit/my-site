@@ -52,6 +52,8 @@ export default function SiteHeader() {
   return (
     <header
       ref={ref}
+      // ตั้งชื่อไว้ให้ทรานซิชันตอนเปลี่ยนหน้ารู้ว่าแถบนี้ต้องนิ่ง (ดู globals.css)
+      style={{ viewTransitionName: "site-header" }}
       className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur"
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-4">
@@ -71,7 +73,7 @@ export default function SiteHeader() {
                   <Link
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`block rounded-full px-3 py-2 tracking-wide whitespace-nowrap transition-colors ${
+                    className={`block rounded-full px-3 py-2 tracking-wide whitespace-nowrap transition active:scale-95 ${
                       active
                         ? "bg-accent-soft font-medium text-accent"
                         : "text-muted hover:bg-accent-soft hover:text-foreground"

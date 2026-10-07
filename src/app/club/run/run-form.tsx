@@ -203,7 +203,7 @@ export default function RunForm({
           max={dateBounds.max}
           required
           onChange={(event) => setRanOn(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-accent"
+          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span
           className={`block text-xs ${dateState.ok ? "text-muted" : "text-club-line"}`}
@@ -224,7 +224,7 @@ export default function RunForm({
           required
           placeholder="เช่น 5.20"
           onChange={(event) => setDistanceKm(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-accent"
+          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span
           className={`block text-xs ${distanceState.message ? "text-club-line" : "text-muted"}`}
@@ -311,7 +311,7 @@ export default function RunForm({
           maxLength={300}
           onChange={(event) => setNote(event.target.value)}
           placeholder="เช่น วิ่งรอบสวนตอนเย็น ฝนตกนิดหน่อย"
-          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent"
+          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
       </label>
 

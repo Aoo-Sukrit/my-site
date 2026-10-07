@@ -16,7 +16,7 @@ import { updateProfileAction, type ProfileState } from "./actions";
 const INITIAL: ProfileState = { error: null, ok: false };
 
 const FIELD_CLASS =
-  "min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-accent";
+  "min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 /** ตัวนับตัวอักษรที่เหลือ เปลี่ยนเป็นสีเน้นเมื่อใกล้เต็ม */
 function Remaining({ used, max }: { used: number; max: number }) {
@@ -96,7 +96,7 @@ export default function ProfileForm({
           maxLength={ABOUT_MAX}
           rows={5}
           placeholder="เล่าอะไรก็ได้ วิ่งมากี่ปีแล้ว ชอบวิ่งที่ไหน เป้าหมายปีนี้คืออะไร"
-          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base outline-none focus:border-accent"
+          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span className="flex items-center justify-between gap-3">
           <span className="text-xs text-muted">

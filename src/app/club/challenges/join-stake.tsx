@@ -62,7 +62,7 @@ export default function JoinStake({
             <select
               value={bottles}
               onChange={(event) => setBottles(Number(event.target.value))}
-              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none focus:border-accent"
+              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
             >
               {BOTTLE_OPTIONS.map((option) => (
                 <option key={option} value={option}>

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import Alert from "@/components/club/alert";
 import ClubLogo from "@/components/club-logo";
+import LinkPending from "@/components/link-pending";
 import { requireApproved } from "@/lib/auth";
 import {
   getRoundChallenges,
@@ -101,10 +102,26 @@ export default async function ClubPage(props: PageProps<"/club">) {
   const readOnly = !isCurrentMonth;
   const monthArg = isCurrentMonth ? undefined : selectedMonth;
 
-  const round = isCurrentMonth
-    ? await getCurrentRound()
-    : await getRoundByMonth(selectedMonth);
-  const board = await getLeaderboard(monthArg);
+  // แถบชวนไปดูผลของเดือนที่แล้ว ขึ้นเฉพาะตอนดูเดือนปัจจุบัน
+  // และเฉพาะเดือนที่มีรางวัลหรือคำท้าอยู่จริง ไม่งั้นกดไปก็เจอหน้าว่าง
+  const lastMonthKey = previousMonthKey(currentMonthKey);
+  const lastMonthExists = months.some(
+    (row) => row.month.slice(0, 7) === lastMonthKey,
+  );
+
+  // สี่อย่างนี้ไม่ต้องรอกัน ยิงพร้อมกันทีเดียว ของเดิมรอทีละตัวจนหน้าแรก
+  // ช้าเท่าผลรวมของทุกคำถาม ตอนนี้ช้าเท่าตัวที่ช้าที่สุดตัวเดียว
+  //
+  // คำท้ายิงไปก่อนเลยถ้าดูเดือนปัจจุบัน แล้วค่อยทิ้งข้างล่างถ้าไม่มีรอบ
+  // getRoundChallenges() ไม่ throw อยู่แล้ว ถ้าฐานข้อมูลตอบ error ก็คืนแถวว่าง
+  const [round, board, roundChallenges, lastMonth] = await Promise.all([
+    isCurrentMonth ? getCurrentRound() : getRoundByMonth(selectedMonth),
+    getLeaderboard(monthArg),
+    isCurrentMonth ? getRoundChallenges() : Promise.resolve([]),
+    isCurrentMonth && lastMonthExists
+      ? lastMonthSummary(lastMonthKey)
+      : Promise.resolve(null),
+  ]);
   const phase = round
     ? roundPhase(round.target_opens_at, round.target_locks_at)
     : "before";
@@ -116,18 +133,7 @@ export default async function ClubPage(props: PageProps<"/club">) {
   // คำท้าที่รอเรากดรับ ต้องเด้งให้เห็นตั้งแต่หน้าแรก ไม่ใช่ซ่อนอยู่ในแท็บรางวัล
   // เพราะถ้าไม่มีใครกดจนเลยวันปิดรับ คำท้าจะตกไปเฉยๆ โดยไม่มีใครรู้ตัว
   const myPendingChallenges =
-    round && isCurrentMonth ? pendingForMe(await getRoundChallenges()) : [];
-
-  // แถบชวนไปดูผลของเดือนที่แล้ว ขึ้นเฉพาะตอนดูเดือนปัจจุบัน
-  // และเฉพาะเดือนที่มีรางวัลหรือคำท้าอยู่จริง ไม่งั้นกดไปก็เจอหน้าว่าง
-  const lastMonthKey = previousMonthKey(currentMonthKey);
-  const lastMonthExists = months.some(
-    (row) => row.month.slice(0, 7) === lastMonthKey,
-  );
-  const lastMonth =
-    isCurrentMonth && lastMonthExists
-      ? await lastMonthSummary(lastMonthKey)
-      : null;
+    round && isCurrentMonth ? pendingForMe(roundChallenges) : [];
 
   /** ลิงก์แท็บที่พาเดือนที่เลือกไปด้วย เดือนปัจจุบันไม่ต้องใส่ month */
   const tabHref = (tab: "percent" | "rewards" | null) => {
@@ -334,13 +340,14 @@ function BoardTab({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex min-h-11 flex-1 items-center justify-center rounded-full text-sm tracking-wide transition-colors ${
+      className={`flex min-h-11 flex-1 items-center justify-center rounded-full text-sm tracking-wide transition active:scale-[0.97] ${
         active
           ? "bg-club-line font-medium text-background"
-          : "text-muted hover:text-foreground"
+          : "text-muted hover:text-foreground has-[[data-pending]]:animate-pulse has-[[data-pending]]:bg-accent-soft has-[[data-pending]]:text-foreground"
       }`}
     >
       {children}
+      <LinkPending />
     </Link>
   );
 }

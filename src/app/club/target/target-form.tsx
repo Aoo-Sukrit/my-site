@@ -52,7 +52,7 @@ export default function TargetForm() {
           required
           placeholder="เช่น 50"
           onChange={(event) => setValue(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-accent"
+          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span
           className={`block text-xs ${check.message ? "text-club-line" : "text-muted"}`}

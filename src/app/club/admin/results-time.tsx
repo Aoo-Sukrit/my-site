@@ -11,7 +11,7 @@ import type { Round } from "@/lib/supabase/types";
 import { setResultsAtAction } from "./actions";
 
 const FIELD_CLASS =
-  "min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-accent";
+  "min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 /**
  * กล่องตั้งเวลาตัดสินผลของแต่ละรอบ

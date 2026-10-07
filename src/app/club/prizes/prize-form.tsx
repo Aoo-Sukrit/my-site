@@ -219,7 +219,7 @@ export default function PrizeForm({
           required
           maxLength={PRIZE_TITLE_MAX}
           placeholder="เช่น เบียร์ 1 ลัง"
-          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-accent"
+          className="min-h-11 w-full rounded-xl border border-border bg-surface px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span className="flex items-center justify-between gap-3">
           <span
@@ -239,7 +239,7 @@ export default function PrizeForm({
           maxLength={PRIZE_DETAIL_MAX}
           rows={3}
           placeholder="เช่น รับที่ร้านประจำ นัดวันกันอีกที"
-          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent"
+          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <span className="flex items-center justify-end">
           <Remaining used={detail.length} max={PRIZE_DETAIL_MAX} />

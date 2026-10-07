@@ -41,7 +41,7 @@ export default function ClubCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-5 rounded-3xl border-2 border-club-line bg-club-cream p-6 text-club-ink transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:items-center sm:gap-7 sm:p-7"
+      className="group flex flex-col gap-5 rounded-3xl border-2 border-club-line bg-club-cream p-6 text-club-ink transition duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.99] sm:flex-row sm:items-center sm:gap-7 sm:p-7"
     >
       {logo ?? (
         <ClubLogo
