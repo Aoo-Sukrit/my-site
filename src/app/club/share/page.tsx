@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import LinkPending from "@/components/link-pending";
 import { requireApproved } from "@/lib/auth";
 import { thaiDateTimeLong } from "@/lib/date";
 import { getCurrentRound, getRoundByMonth, getRoundMonths } from "@/lib/runs";
@@ -26,13 +27,14 @@ function ShareTab({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex min-h-11 flex-1 items-center justify-center rounded-full text-sm tracking-wide transition-colors ${
+      className={`flex min-h-11 flex-1 items-center justify-center rounded-full text-sm tracking-wide transition active:scale-[0.97] ${
         active
           ? "bg-club-line font-medium text-background"
-          : "text-muted hover:text-foreground"
+          : "text-muted hover:text-foreground has-[[data-pending]]:animate-pulse has-[[data-pending]]:bg-accent-soft has-[[data-pending]]:text-foreground"
       }`}
     >
       {children}
+      <LinkPending />
     </Link>
   );
 }

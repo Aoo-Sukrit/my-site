@@ -117,7 +117,7 @@ export function MemberCard({
             required
             minLength={NICKNAME_MIN}
             maxLength={NICKNAME_MAX}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none focus:border-accent"
+            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
           />
         </label>
         <SubmitButton variant="ghost" pendingLabel="กำลังบันทึก…">
@@ -132,7 +132,7 @@ export function MemberCard({
           <select
             name="status"
             defaultValue={profile.status}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none focus:border-accent"
+            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
           >
             {PROFILE_STATUSES.map((status) => (
               <option key={status} value={status}>

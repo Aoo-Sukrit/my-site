@@ -249,7 +249,7 @@ export function LogRunButton() {
       href="/club/run/new"
       // เผื่อแถบ home indicator ของ iPhone ไม่ให้ปุ่มไปทับ
       style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
-      className="fixed right-5 z-30 flex min-h-14 items-center gap-2 rounded-full bg-club-line px-6 text-base font-medium tracking-wide text-background shadow-lg transition hover:opacity-90"
+      className="fixed right-5 z-30 flex min-h-14 items-center gap-2 rounded-full bg-club-line px-6 text-base font-medium tracking-wide text-background shadow-lg transition hover:opacity-90 active:scale-95"
     >
       <span aria-hidden className="text-xl leading-none">
         +

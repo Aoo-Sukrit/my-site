@@ -80,3 +80,302 @@ p {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ============================================================================
+   ความลื่นตอนเปลี่ยนหน้า
+   ----------------------------------------------------------------------------
+   PageTransition (src/components/page-transition.tsx) ครอบเนื้อหาทุกหน้าไว้ใน
+   <ViewTransition> ของ React พอกดลิงก์ไปหน้าใหม่ หน้าเก่าจางออกเร็วๆ
+   แล้วหน้าใหม่ค่อยลอยขึ้นมานิดเดียวพร้อมจางเข้า
+
+   ขาออกสั้นกว่าขาเข้าโดยตั้งใจ ของเก่าควรหลบไปเร็วจะได้ไม่แย่งสายตา
+   ของใหม่ค่อยๆ มาให้ตาจับทัน และขาเข้าหน่วงรอขาออกจบก่อน ไม่ให้สองหน้าซ้อนกัน
+
+   เบราว์เซอร์ที่ยังไม่รองรับ View Transitions จะเปลี่ยนหน้าแบบเดิมทันที
+   ไม่พังอะไร
+   ============================================================================ */
+
+:root {
+  --page-exit: 120ms;
+  --page-enter: 220ms;
+}
+
+::view-transition-old(.page-exit) {
+  animation: var(--page-exit) ease-in both page-fade reverse;
+}
+
+::view-transition-new(.page-enter) {
+  animation:
+    var(--page-enter) ease-out var(--page-exit) both page-fade,
+    320ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--page-exit) both page-rise;
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes page-rise {
+  from {
+    translate: 0 10px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+/* หน้าที่ยังไม่ได้เปลี่ยน (รากของเอกสาร) ไม่ต้องจางซ้ำ ไม่งั้นพื้นหลัง
+   กับ footer กะพริบทุกครั้งที่เปลี่ยนหน้า */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* เมนูหลักกับแถบเมนูคลับต้องนิ่งอยู่กับที่ระหว่างที่เนื้อหาขยับ
+   เป็นจุดอ้างอิงให้ตารู้ว่า "เนื้อหาเปลี่ยน" ไม่ใช่ทั้งจอเปลี่ยน
+   ซ่อนภาพเก่าทิ้งไปเลย จะได้ไม่เห็นเมนูสองชั้นซ้อนกันแวบหนึ่ง */
+::view-transition-group(site-header),
+::view-transition-group(club-nav) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header),
+::view-transition-old(club-nav) {
+  display: none;
+}
+
+::view-transition-new(site-header),
+::view-transition-new(club-nav) {
+  animation: none;
+}
+
+/* ระหว่างทรานซิชันเบราว์เซอร์เอาชั้นภาพมาบังหน้าจริงไว้ กดอะไรก็ไม่ติด
+   ปล่อยให้แตะทะลุลงไปที่หน้าจริงได้ เพื่อนที่กดรัวๆ จะได้ไม่รู้สึกว่าค้าง */
+::view-transition {
+  pointer-events: none;
+}
+
+/* คนที่ตั้งเครื่องไว้ว่าไม่อยากเห็นของขยับ: ตัดการเลื่อนออกหมด
+   เหลือแค่เปลี่ยนหน้าทันทีเหมือนเว็บทั่วไป */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ============================================================================
+   หน้าโครงระหว่างโหลด (skeleton)
+   ----------------------------------------------------------------------------
+   แถบแสงไล่จากซ้ายไปขวาบนก้อนสีเทาอุ่น ใช้สีเส้นขอบของเว็บเป็นฐาน
+   จะได้กลืนกับโทนครีมทั้งโหมดสว่างและโหมดมืด
+   ============================================================================ */
+
+.skeleton {
+  background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--skeleton-shine, var(--surface)) 55%, transparent)
+        50%,
+      transparent 100%
+    )
+    0 0 / 200% 100% no-repeat,
+    var(--skeleton-base, var(--border));
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position:
+      150% 0,
+      0 0;
+  }
+  to {
+    background-position:
+      -50% 0,
+      0 0;
+  }
+}
+
+/* ก้อนที่วางบนการ์ดสีครีมของคลับ การ์ดนั้นตรึงสีไว้ไม่สลับตามโหมดมืด
+   ก้อนข้างในก็ต้องตรึงตาม ไม่งั้นโหมดมืดจะได้ก้อนดำบนพื้นครีม */
+.skeleton-on-cream {
+  --skeleton-base: color-mix(in oklab, var(--club-line) 14%, var(--club-cream));
+  --skeleton-shine: var(--club-cream);
+}
+
+/* หน้าโครงไม่โผล่ทันทีที่กด ถ้าข้อมูลมาเร็วกว่า 150ms จะไม่เห็นมันเลย
+   ไม่งั้นหน้าที่โหลดไวจะกะพริบเป็นก้อนเทาแวบเดียวแล้วหาย ซึ่งดูแย่กว่าไม่มี */
+.skeleton-page {
+  animation: skeleton-appear 200ms ease-out 150ms both;
+}
+
+@keyframes skeleton-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   ลูกเล่นเล็กๆ ตอนแตะ
+   ============================================================================ */
+
+/* เมนูบัญชีมุมขวา กางออกจากมุมที่กด แทนที่จะโผล่มาเฉยๆ */
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-menu-pop {
+  animation: menu-pop 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-menu-pop {
+    animation: none;
+  }
+}
+
+/* มือถือชอบโชว์กรอบสีฟ้าตอนแตะลิงก์ ซึ่งไม่เข้ากับโทนเว็บ
+   เราทำ active: ของตัวเองให้ปุ่มยุบลงนิดๆ แทนแล้ว */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================================
+   แก้วเบียร์ชนกัน (CheersLoader) ตอนรอวาดรูปสตอรี่
+   ----------------------------------------------------------------------------
+   รอบละ 1.6 วินาที: ตั้งนิ่ง → เอียงเข้าหากัน → ชนแล้วเด้งกลับนิดหนึ่ง → พัก
+   หมุนรอบก้นแก้ว (fill-box + bottom) เหมือนคนยกแก้วขึ้นมาชนจริง
+   ฟองกระเด็นโผล่เฉพาะจังหวะชน
+   ============================================================================ */
+
+.cheers-left,
+.cheers-right {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+/* เขียน animation เต็มทั้งบรรทัดแยกกันสองตัว ห้ามรวบเป็นบรรทัดเดียวที่ไม่มีชื่อ
+   แล้วค่อยใส่ animation-name ทีหลัง ตัวย่อ CSS ตอน build จะทิ้งค่าเวลาไปเงียบๆ */
+.cheers-left {
+  animation: cheers-left 1.6s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+
+.cheers-right {
+  animation: cheers-right 1.6s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+
+@keyframes cheers-left {
+  0%,
+  15% {
+    transform: none;
+  }
+  42% {
+    transform: translateX(3px) rotate(4deg);
+  }
+  50% {
+    transform: translateX(1px) rotate(1.5deg);
+  }
+  58% {
+    transform: translateX(2px) rotate(3deg);
+  }
+  85%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes cheers-right {
+  0%,
+  15% {
+    transform: none;
+  }
+  42% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(-1px) rotate(-1.5deg);
+  }
+  58% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  85%,
+  100% {
+    transform: none;
+  }
+}
+
+.cheers-splash {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: cheers-splash 1.6s ease-out infinite;
+}
+
+@keyframes cheers-splash {
+  0%,
+  40% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  46% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ฟองอากาศในเบียร์ลอยขึ้นช้าๆ ให้รู้สึกว่าเบียร์ยังซ่าอยู่ */
+.cheers-bubble {
+  animation: cheers-bubble 1.8s ease-in infinite;
+}
+
+@keyframes cheers-bubble {
+  from {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheers-left,
+  .cheers-right,
+  .cheers-splash,
+  .cheers-bubble {
+    animation: none;
+  }
+}

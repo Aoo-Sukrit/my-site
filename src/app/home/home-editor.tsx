@@ -9,7 +9,7 @@ import type { HomeContent } from "@/lib/supabase/types";
 import { saveHomeContentAction } from "./actions";
 
 const FIELD =
-  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent";
+  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 /**
  * หน้าแก้ข้อความหน้าแรก

@@ -57,7 +57,7 @@ export default function TypeToConfirm({
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
           autoComplete="off"
-          className="min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-accent"
+          className="min-h-11 w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
       </label>
 

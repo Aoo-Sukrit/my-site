@@ -28,9 +28,9 @@ import {
 } from "./actions";
 
 const FIELD =
-  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent";
+  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 const SMALL_FIELD =
-  "min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent";
+  "min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 type SectionDraft = SectionValues & {
   /** URL ที่เอาไว้โชว์ตอนนี้ ไม่ได้ส่งลงฐานข้อมูล */

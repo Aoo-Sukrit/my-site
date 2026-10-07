@@ -32,7 +32,7 @@ const CHIP_ON = "bg-club-line font-medium text-background";
 const CHIP_OFF =
   "border border-border text-muted hover:border-accent hover:text-foreground";
 const FIELD =
-  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent";
+  "w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15";
 
 /** รูปหนึ่งชิ้นในตัวแก้ไข มี previewUrl ไว้โชว์ก่อนบันทึก */
 type Draft = MediaInput & { key: string; previewUrl: string | null };
@@ -314,7 +314,7 @@ export default function PostEditor({
                     }
                     maxLength={POST_CAPTION_MAX}
                     placeholder="คำอธิบายใต้ภาพ · ไม่ใส่ก็ได้"
-                    className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+                    className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
                   />
 
                   <div className="flex flex-wrap gap-2">

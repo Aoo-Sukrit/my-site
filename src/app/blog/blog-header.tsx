@@ -71,7 +71,7 @@ export default function BlogHeader({
             onChange={(event) => setTitle(event.target.value)}
             maxLength={80}
             autoFocus
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 font-display text-xl outline-none focus:border-accent"
+            className="w-full rounded-xl border border-border bg-surface px-4 py-3 font-display text-xl outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
           />
         </label>
 
@@ -83,7 +83,7 @@ export default function BlogHeader({
             maxLength={300}
             rows={2}
             placeholder="เว้นว่างไว้ก็ได้ ถ้าว่างจะไม่โชว์"
-            className="w-full resize-y rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-accent"
+            className="w-full resize-y rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
           />
         </label>
 

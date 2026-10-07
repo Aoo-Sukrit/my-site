@@ -78,7 +78,7 @@ export default function WallComposer({
             rows={2}
             placeholder={`แซว ${ownerName} หน่อย…`}
             aria-label={`เขียนข้อความถึง ${ownerName}`}
-            className="w-full resize-y rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-accent"
+            className="w-full resize-y rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm outline-none transition-[border-color,box-shadow] focus:border-accent focus:ring-4 focus:ring-accent/15"
           />
           {/* เตือนเฉพาะตอนใกล้เต็ม ไม่ต้องขึ้นตัวเลขกวนตาตั้งแต่ตัวแรก */}
           {left <= 40 ? (

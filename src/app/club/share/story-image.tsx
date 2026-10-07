@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import CheersLoader from "@/components/club/cheers-loader";
+
 /**
  * รูปสตอรี่พร้อมสถานะกำลังสร้าง
  *
@@ -34,13 +36,15 @@ export default function StoryImage({
         <div className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-club-line bg-accent-soft text-center">
           {state === "loading" ? (
             <>
-              <span
-                aria-hidden
-                className="h-8 w-8 animate-spin rounded-full border-2 border-club-line border-t-transparent"
-              />
-              <p className="text-sm text-muted">กำลังสร้างรูป…</p>
+              <CheersLoader className="w-40" />
+              <p
+                role="status"
+                className="font-display text-lg font-semibold text-accent-strong"
+              >
+                กินเบียร์รอก่อนนะ
+              </p>
               <p className="px-6 text-xs text-muted">
-                วาดใหม่ทุกครั้งพร้อมรูปโปรไฟล์ทุกคน ใช้เวลาสักครู่
+                กำลังวาดรูปพร้อมรูปโปรไฟล์ทุกคน ใช้เวลาสักครู่
               </p>
             </>
           ) : (

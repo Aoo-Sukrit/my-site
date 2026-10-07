@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Anuphan, IBM_Plex_Sans_Thai_Looped } from "next/font/google";
 
+import PageTransition from "@/components/page-transition";
 import SiteHeader from "@/components/site-header";
 import { site } from "@/lib/site";
 import "./globals.css";
@@ -51,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-sans">
         <SiteHeader />
         <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-10 sm:py-14">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
         <footer className="border-t border-border">
           <div className="mx-auto w-full max-w-2xl px-5 py-8 text-sm text-muted">
