@@ -265,3 +265,117 @@ a,
 button {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ============================================================================
+   แก้วเบียร์ชนกัน (CheersLoader) ตอนรอวาดรูปสตอรี่
+   ----------------------------------------------------------------------------
+   รอบละ 1.6 วินาที: ตั้งนิ่ง → เอียงเข้าหากัน → ชนแล้วเด้งกลับนิดหนึ่ง → พัก
+   หมุนรอบก้นแก้ว (fill-box + bottom) เหมือนคนยกแก้วขึ้นมาชนจริง
+   ฟองกระเด็นโผล่เฉพาะจังหวะชน
+   ============================================================================ */
+
+.cheers-left,
+.cheers-right {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+/* เขียน animation เต็มทั้งบรรทัดแยกกันสองตัว ห้ามรวบเป็นบรรทัดเดียวที่ไม่มีชื่อ
+   แล้วค่อยใส่ animation-name ทีหลัง ตัวย่อ CSS ตอน build จะทิ้งค่าเวลาไปเงียบๆ */
+.cheers-left {
+  animation: cheers-left 1.6s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+
+.cheers-right {
+  animation: cheers-right 1.6s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+
+@keyframes cheers-left {
+  0%,
+  15% {
+    transform: none;
+  }
+  42% {
+    transform: translateX(3px) rotate(4deg);
+  }
+  50% {
+    transform: translateX(1px) rotate(1.5deg);
+  }
+  58% {
+    transform: translateX(2px) rotate(3deg);
+  }
+  85%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes cheers-right {
+  0%,
+  15% {
+    transform: none;
+  }
+  42% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(-1px) rotate(-1.5deg);
+  }
+  58% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  85%,
+  100% {
+    transform: none;
+  }
+}
+
+.cheers-splash {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: cheers-splash 1.6s ease-out infinite;
+}
+
+@keyframes cheers-splash {
+  0%,
+  40% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  46% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ฟองอากาศในเบียร์ลอยขึ้นช้าๆ ให้รู้สึกว่าเบียร์ยังซ่าอยู่ */
+.cheers-bubble {
+  animation: cheers-bubble 1.8s ease-in infinite;
+}
+
+@keyframes cheers-bubble {
+  from {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheers-left,
+  .cheers-right,
+  .cheers-splash,
+  .cheers-bubble {
+    animation: none;
+  }
+}
