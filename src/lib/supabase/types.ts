@@ -468,3 +468,20 @@ export type ClubSummary = {
   leader_avatar_url: string | null;
   leader_km: string | null;
 };
+
+// ---------------------------------------------------------------------------
+//  ข้อเสนอแก้กติกาเดือนหน้า (20261008090000_rule_suggestions.sql)
+//  มาจาก rule_suggestions_list() เท่านั้น เป็นของเดือนปัจจุบันเสมอ
+// ---------------------------------------------------------------------------
+
+export type RuleSuggestion = {
+  id: string;
+  author_id: string;
+  nickname: string;
+  avatar_url: string | null;
+  body: string;
+  created_at: string;
+  vote_count: number;
+  i_voted: boolean;
+  is_mine: boolean;
+};

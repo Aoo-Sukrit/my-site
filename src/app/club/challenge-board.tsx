@@ -31,7 +31,11 @@ import {
   formatKm,
   thaiDateTimeLong,
 } from "@/lib/date";
-import type { ChallengeRow, ChallengeStakeRow, Round } from "@/lib/supabase/types";
+import type {
+  ChallengeRow,
+  ChallengeStakeRow,
+  Round,
+} from "@/lib/supabase/types";
 
 import {
   acceptChallengeAction,
@@ -39,6 +43,7 @@ import {
   declineChallengeAction,
 } from "./challenges/actions";
 import JoinStake from "./challenges/join-stake";
+import RuleSuggestions from "./rule-suggestions/rule-suggestions";
 
 const ADD_BUTTON =
   "flex min-h-12 w-full items-center justify-center rounded-2xl border border-dashed border-club-line text-sm tracking-wide text-club-line transition-colors hover:bg-accent-soft";
@@ -90,8 +95,8 @@ function Matchup({ row }: { row: ChallengeRow }) {
         avatarUrl={row.runner_avatar_url}
       />
       <p className="min-w-0 flex-1 truncate text-sm font-medium">
-        {row.challenger_nickname}{" "}
-        <span className="text-muted">ท้า</span> {row.runner_nickname}
+        {row.challenger_nickname} <span className="text-muted">ท้า</span>{" "}
+        {row.runner_nickname}
       </p>
     </div>
   );
@@ -323,7 +328,9 @@ function PayoutLine({
         {split.winners.map((payout, index) => (
           <span key={payout.id}>
             {index > 0 ? " · " : ""}
-            <span className="font-medium">{nameOf.get(payout.id)}</span> ได้{" "}
+            <span className="font-medium">
+              {nameOf.get(payout.id)}
+            </span> ได้{" "}
             <span className="tabular-nums text-accent-strong">
               {formatBottles(payout.bottles)}
             </span>
@@ -335,7 +342,9 @@ function PayoutLine({
           <span key={payout.id}>
             {index > 0 ? " · " : ""}
             {nameOf.get(payout.id)} จ่าย{" "}
-            <span className="tabular-nums">{formatBottles(payout.bottles)}</span>
+            <span className="tabular-nums">
+              {formatBottles(payout.bottles)}
+            </span>
           </span>
         ))}
       </p>
@@ -574,70 +583,75 @@ export default async function ChallengeBoard({
   const quiet = challenges.filter((row) => isDormant(statusOf(row)));
 
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="font-display text-lg font-medium">คำท้า</h2>
-        <p className="text-sm text-muted">
-          กองกลางเดียว เพื่อนเข้าร่วมฝั่งไหนก็ได้ เติม +0 ถึง +3 ขวด
-          จบเดือนฝั่งแพ้จ่ายทั้งกอง ฝั่งชนะรับทั้งกอง หารเท่ากัน
-          ไม่มีใครจ่ายเกิน {SHARE_CAP} ขวดต่อคน
-        </p>
-      </div>
-
-      {challenges.length === 0 ? (
-        <div className="space-y-3 rounded-2xl border border-dashed border-club-line bg-accent-soft px-5 py-8 text-center">
-          <p className="font-display text-base font-medium">
-            ยังไม่มีใครท้าใคร
+    <div className="space-y-10">
+      <section className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="font-display text-lg font-medium">คำท้า</h2>
+          <p className="text-sm text-muted">
+            กองกลางเดียว เพื่อนเข้าร่วมฝั่งไหนก็ได้ เติม +0 ถึง +3 ขวด
+            จบเดือนฝั่งแพ้จ่ายทั้งกอง ฝั่งชนะรับทั้งกอง หารเท่ากัน
+            ไม่มีใครจ่ายเกิน {SHARE_CAP} ขวดต่อคน
           </p>
-          <p className="text-sm text-muted">เปิดประเดิมเลย</p>
-          {readOnly ? null : (
-            <Link href="/club/challenges/new" className={ADD_BUTTON}>
-              + ท้าเพื่อน
-            </Link>
-          )}
         </div>
-      ) : (
-        <>
-          <ul className="space-y-3">
-            {live.map((row) =>
-              statusOf(row) === "pending" ? (
-                <PendingCard
-                  key={row.challenge_id}
-                  row={row}
-                  stakes={grouped.get(row.challenge_id) ?? []}
-                  readOnly={readOnly}
-                />
-              ) : (
-                <ChallengeCard
-                  key={row.challenge_id}
-                  row={row}
-                  stakes={grouped.get(row.challenge_id) ?? []}
-                  monthEnd={monthEnd}
-                  readOnly={readOnly}
-                />
-              ),
+
+        {challenges.length === 0 ? (
+          <div className="space-y-3 rounded-2xl border border-dashed border-club-line bg-accent-soft px-5 py-8 text-center">
+            <p className="font-display text-base font-medium">
+              ยังไม่มีใครท้าใคร
+            </p>
+            <p className="text-sm text-muted">เปิดประเดิมเลย</p>
+            {readOnly ? null : (
+              <Link href="/club/challenges/new" className={ADD_BUTTON}>
+                + ท้าเพื่อน
+              </Link>
             )}
-          </ul>
-
-          {quiet.length > 0 ? (
-            <ul className="space-y-2">
-              {quiet.map((row) => (
-                <QuietCard
-                  key={row.challenge_id}
-                  row={row}
-                  status={statusOf(row)}
-                />
-              ))}
+          </div>
+        ) : (
+          <>
+            <ul className="space-y-3">
+              {live.map((row) =>
+                statusOf(row) === "pending" ? (
+                  <PendingCard
+                    key={row.challenge_id}
+                    row={row}
+                    stakes={grouped.get(row.challenge_id) ?? []}
+                    readOnly={readOnly}
+                  />
+                ) : (
+                  <ChallengeCard
+                    key={row.challenge_id}
+                    row={row}
+                    stakes={grouped.get(row.challenge_id) ?? []}
+                    monthEnd={monthEnd}
+                    readOnly={readOnly}
+                  />
+                ),
+              )}
             </ul>
-          ) : null}
 
-          {readOnly ? null : (
-            <Link href="/club/challenges/new" className={ADD_BUTTON}>
-              + ท้าเพื่อน
-            </Link>
-          )}
-        </>
-      )}
-    </section>
+            {quiet.length > 0 ? (
+              <ul className="space-y-2">
+                {quiet.map((row) => (
+                  <QuietCard
+                    key={row.challenge_id}
+                    row={row}
+                    status={statusOf(row)}
+                  />
+                ))}
+              </ul>
+            ) : null}
+
+            {readOnly ? null : (
+              <Link href="/club/challenges/new" className={ADD_BUTTON}>
+                + ท้าเพื่อน
+              </Link>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* เสนอแก้กติกาได้เฉพาะเดือนปัจจุบัน ย้อนดูเดือนเก่าไม่ต้องโชว์ */}
+      {readOnly ? null : <RuleSuggestions />}
+    </div>
   );
 }
