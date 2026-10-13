@@ -10,8 +10,16 @@ import {
   isPostVisibility,
   parseYouTubeId,
 } from "@/lib/post-rules";
+import {
+  SERIES_DESCRIPTION_MAX,
+  SERIES_ORDER_MAX,
+  SERIES_TITLE_MAX,
+  SERIES_UNIT_MAX,
+  isSeriesSlug,
+} from "@/lib/series-rules";
 import { toThaiDbError } from "@/lib/supabase/errors";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { SeriesOption } from "@/lib/supabase/types";
 
 export type MediaInput = {
   kind: "image" | "youtube";
@@ -32,6 +40,10 @@ export type PostFormValues = {
   visibility: string;
   status: string;
   media: MediaInput[];
+  /** ซีรีส์ที่โพสต์นี้อยู่ ว่างคือโพสต์เดี่ยว */
+  seriesId: string | null;
+  /** เลขตอน เช่น 3 ของ Week 3 */
+  seriesOrder: number | null;
 };
 
 export type PostActionResult = {
@@ -73,6 +85,18 @@ function validate(values: PostFormValues): string | null {
   if (!values.section) return "เลือกหมวดก่อน";
   if (!isPostVisibility(values.visibility)) return "เลือกว่าใครเห็นได้";
   if (!isPostStatus(values.status)) return "สถานะไม่ถูกต้อง";
+
+  if (values.seriesId) {
+    const order = values.seriesOrder;
+    if (
+      order === null ||
+      !Number.isInteger(order) ||
+      order < 1 ||
+      order > SERIES_ORDER_MAX
+    ) {
+      return `ใส่เลขตอนเป็นเลข 1–${SERIES_ORDER_MAX}`;
+    }
+  }
 
   for (const item of values.media) {
     if (item.kind === "youtube" && !item.youtubeId) {
@@ -117,6 +141,8 @@ export async function savePostAction(
     p_visibility: values.visibility,
     p_status: values.status,
     p_media: media,
+    p_series_id: values.seriesId || null,
+    p_series_order: values.seriesId ? values.seriesOrder : null,
   });
 
   if (error) return { ok: false, id: null, error: toThaiDbError(error) };
@@ -126,6 +152,98 @@ export async function savePostAction(
 
   refresh();
   return { ok: true, id: result.id ?? values.id, error: null };
+}
+
+export type SeriesFormValues = {
+  /** ซีรีส์ใหม่ก็ตั้ง id มาจากเบราว์เซอร์ เพื่อให้โฟลเดอร์รูปปกชื่อตรงกัน */
+  id: string;
+  /** ว่างได้ ฐานข้อมูลสร้างจากชื่อให้ */
+  slug: string;
+  title: string;
+  description: string;
+  unitLabel: string;
+  coverUrl: string | null;
+};
+
+export type SeriesActionResult =
+  | { ok: true; series: SeriesOption; error: null }
+  | { ok: false; series: null; error: string };
+
+/**
+ * สร้างหรือแก้ซีรีส์จากหน้าเขียนโพสต์
+ * คืนแถวที่บันทึกแล้วกลับไปให้ dropdown ใช้ต่อทันทีโดยไม่ต้องโหลดหน้าใหม่
+ */
+export async function saveSeriesAction(
+  values: SeriesFormValues,
+): Promise<SeriesActionResult> {
+  await requireAdmin();
+
+  const title = values.title.trim();
+  const slug = values.slug.trim().toLowerCase();
+  const unit = values.unitLabel.trim();
+
+  if (!title) return { ok: false, series: null, error: "ใส่ชื่อซีรีส์ด้วย" };
+  if (title.length > SERIES_TITLE_MAX) {
+    return { ok: false, series: null, error: `ชื่อซีรีส์ยาวเกิน ${SERIES_TITLE_MAX} ตัวอักษร` };
+  }
+  if (slug && !isSeriesSlug(slug)) {
+    return {
+      ok: false,
+      series: null,
+      error: "slug ใช้ได้แค่ a-z 0-9 กับขีด - ยาว 2–60 ตัว เช่น quant-trading",
+    };
+  }
+  if (values.description.length > SERIES_DESCRIPTION_MAX) {
+    return { ok: false, series: null, error: `คำอธิบายยาวเกิน ${SERIES_DESCRIPTION_MAX} ตัวอักษร` };
+  }
+  if (unit.length > SERIES_UNIT_MAX) {
+    return { ok: false, series: null, error: `คำเรียกตอนยาวเกิน ${SERIES_UNIT_MAX} ตัวอักษร` };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_save_series", {
+    p_id: values.id,
+    p_slug: slug,
+    p_title: title,
+    p_description: values.description,
+    p_unit_label: unit,
+    p_cover_url: values.coverUrl,
+  });
+
+  if (error) return { ok: false, series: null, error: toThaiDbError(error) };
+
+  const saved = (data ?? {}) as { id?: string; slug?: string; removed?: unknown };
+  await removeFiles(saved.removed);
+
+  // อ่านกลับจากรายการจริง จะได้จำนวนตอนกับเลขตอนสูงสุดที่ถูกต้อง
+  const { data: list } = await supabase.rpc("post_series_list");
+  const row = ((list ?? []) as SeriesOption[]).find(
+    (item) => item.id === (saved.id ?? values.id),
+  );
+
+  refresh();
+
+  if (!row) {
+    return { ok: false, series: null, error: "บันทึกแล้วแต่โหลดซีรีส์กลับมาไม่ได้ ลองรีเฟรชหน้า" };
+  }
+  return { ok: true, series: row, error: null };
+}
+
+/** ลบซีรีส์ โพสต์ข้างในยังอยู่ครบ แค่กลายเป็นโพสต์เดี่ยว */
+export async function deleteSeriesAction(
+  id: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  await requireAdmin();
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_delete_series", { p_id: id });
+
+  if (error) return { ok: false, error: toThaiDbError(error) };
+
+  await removeFiles((data as { removed?: unknown } | null)?.removed);
+
+  refresh();
+  return { ok: true, error: null };
 }
 
 /** ใช้เป็น form action คู่กับปุ่มยืนยันสองจังหวะ */

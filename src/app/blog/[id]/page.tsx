@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 
 import { getViewer } from "@/lib/auth";
 import { excerpt, youTubeThumb } from "@/lib/post-rules";
-import { getPostById, getPostFeed, postImageUrl } from "@/lib/posts";
+import {
+  getPostById,
+  getPostFeed,
+  getSeriesNav,
+  postImageUrl,
+} from "@/lib/posts";
 
 import PostView from "../post-view";
 
@@ -48,7 +53,11 @@ export async function generateMetadata(
 export default async function PostPage(props: PageProps<"/blog/[id]">) {
   const { id } = await props.params;
 
-  const [post, viewer] = await Promise.all([getPostById(id), getViewer()]);
+  const [post, viewer, series] = await Promise.all([
+    getPostById(id),
+    getViewer(),
+    getSeriesNav(id),
+  ]);
 
   // ไม่มีสิทธิ์กับไม่มีโพสต์ ให้ผลลัพธ์เดียวกันโดยตั้งใจ
   // ถ้าแยกเป็น 403 กับ 404 คนนอกจะเดาได้ว่า id ไหนมีโพสต์อยู่จริง
@@ -68,6 +77,7 @@ export default async function PostPage(props: PageProps<"/blog/[id]">) {
       post={post}
       isAdmin={viewer?.profile.is_admin ?? false}
       pinned={pinned}
+      series={series}
     />
   );
 }

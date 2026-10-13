@@ -9,7 +9,8 @@ import PostBody from "@/components/post/post-body";
 import { thaiShortDate } from "@/lib/date";
 import { VISIBILITY_LABEL, isPostVisibility } from "@/lib/post-rules";
 import { postImageUrl } from "@/lib/posts";
-import type { PostDetail } from "@/lib/supabase/types";
+import { episodeLabel } from "@/lib/series-rules";
+import type { PostDetail, SeriesNav } from "@/lib/supabase/types";
 
 import { togglePinnedAction } from "../about/actions";
 
@@ -26,8 +27,11 @@ export default function PostView({
   isAdmin,
   pinned = false,
   viaToken = false,
+  series = null,
 }: {
   post: PostDetail;
+  /** ถ้าโพสต์อยู่ในซีรีส์ โชว์แถบซีรีส์ข้างบนกับปุ่มตอนก่อน/ถัดไปข้างล่าง */
+  series?: SeriesNav | null;
   isAdmin: boolean;
   /** ปักหมุดให้ขึ้นการ์ดใหญ่บนหน้า ABOUT อยู่ไหม */
   pinned?: boolean;
@@ -67,7 +71,22 @@ export default function PostView({
 
   return (
     <article className="mx-auto max-w-2xl space-y-6">
-      {viaToken ? null : (
+      {series ? (
+        // อยู่ในซีรีส์ ปุ่มบนสุดพากลับหน้าซีรีส์แทนหน้าหมวด
+        <Link
+          href={`/blog/series/${series.series_slug}`}
+          className="flex min-h-11 items-center gap-2 rounded-full border border-club-line bg-accent-soft px-4 py-2 text-sm text-accent-strong transition-colors hover:bg-accent hover:text-background"
+        >
+          <span aria-hidden>←</span>
+          <span className="min-w-0 truncate font-medium">
+            {series.series_title}
+          </span>
+          <span aria-hidden>·</span>
+          <span className="shrink-0">
+            {episodeLabel(series.unit_label, series.series_order)}
+          </span>
+        </Link>
+      ) : viaToken ? null : (
         <Link
           href={home.href}
           className="inline-flex min-h-11 items-center pr-3 text-sm text-muted transition-colors hover:text-foreground"
@@ -105,6 +124,38 @@ export default function PostView({
       <PostBody body={post.body} />
 
       <MediaGallery items={items} />
+
+      {series && (series.prev_id || series.next_id) ? (
+        <nav
+          aria-label="ตอนอื่นในซีรีส์"
+          className="grid grid-cols-2 gap-3"
+        >
+          {series.prev_id ? (
+            <Link
+              href={`/blog/${series.prev_id}`}
+              className="flex min-h-11 flex-col gap-0.5 rounded-2xl border border-border bg-surface p-3 transition hover:border-accent active:scale-[0.98]"
+            >
+              <span className="text-xs text-accent-strong">
+                ← {episodeLabel(series.unit_label, series.prev_order)}
+              </span>
+              <span className="line-clamp-2 text-sm">{series.prev_title}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {series.next_id ? (
+            <Link
+              href={`/blog/${series.next_id}`}
+              className="flex min-h-11 flex-col items-end gap-0.5 rounded-2xl border border-border bg-surface p-3 text-right transition hover:border-accent active:scale-[0.98]"
+            >
+              <span className="text-xs text-accent-strong">
+                {episodeLabel(series.unit_label, series.next_order)} →
+              </span>
+              <span className="line-clamp-2 text-sm">{series.next_title}</span>
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
 
       <footer className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
         <CopyLink

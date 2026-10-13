@@ -22,9 +22,10 @@ import {
   type PostVisibility,
 } from "@/lib/post-rules";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { PostSection } from "@/lib/supabase/types";
+import type { PostSection, SeriesOption } from "@/lib/supabase/types";
 
 import { savePostAction, type MediaInput } from "./actions";
+import SeriesPicker from "./series-picker";
 
 const CHIP =
   "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm tracking-wide transition-colors";
@@ -44,6 +45,8 @@ export type PostEditorDefaults = {
   section: string;
   visibility: PostVisibility;
   media: Draft[];
+  seriesId: string | null;
+  seriesOrder: number | null;
 };
 
 /**
@@ -60,10 +63,15 @@ export default function PostEditor({
   sections,
   defaults,
   storageUsed,
+  seriesList,
+  seriesCovers,
 }: {
   sections: PostSection[];
   defaults: PostEditorDefaults;
   storageUsed: number;
+  seriesList: SeriesOption[];
+  /** ที่อยู่ไฟล์รูปปกซีรีส์ → URL เต็ม */
+  seriesCovers: Record<string, string>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -81,6 +89,10 @@ export default function PostEditor({
     defaults.visibility,
   );
   const [media, setMedia] = useState<Draft[]>(defaults.media);
+  const [series, setSeries] = useState<{ seriesId: string | null; order: string }>({
+    seriesId: defaults.seriesId,
+    order: defaults.seriesOrder === null ? "" : String(defaults.seriesOrder),
+  });
 
   const [uploading, setUploading] = useState<{ done: number; total: number } | null>(
     null,
@@ -237,6 +249,8 @@ export default function PostEditor({
             bytes: item.bytes,
           }),
         ),
+        seriesId: series.seriesId,
+        seriesOrder: series.seriesId ? Number.parseInt(series.order, 10) || null : null,
       });
 
       if (!result.ok) {
@@ -412,7 +426,8 @@ export default function PostEditor({
         />
       </section>
 
-      <fieldset className="space-y-2">
+      {/* min-w-0 เพราะ fieldset ไม่ยอมหดต่ำกว่าเนื้อในเอง แถวชิปเลยดันจอกว้างเกิน */}
+      <fieldset className="min-w-0 space-y-2">
         <legend className="text-sm font-medium">ไปอยู่ที่</legend>
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {sections.map((row) => (
@@ -428,6 +443,15 @@ export default function PostEditor({
           ))}
         </div>
       </fieldset>
+
+      <SeriesPicker
+        initialList={seriesList}
+        seriesId={series.seriesId}
+        order={series.order}
+        onChange={setSeries}
+        coverUrlOf={seriesCovers}
+        disabled={busy}
+      />
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">ใครเห็นได้</legend>

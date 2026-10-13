@@ -8,7 +8,15 @@ import {
   youTubeThumb,
   type PostVisibility,
 } from "@/lib/post-rules";
-import { getPostById, getPostSections, getStorageUsed, postImageUrl } from "@/lib/posts";
+import {
+  getPostById,
+  getPostSections,
+  getSeriesList,
+  getSeriesNav,
+  getStorageUsed,
+  postImageUrl,
+  seriesCoverMap,
+} from "@/lib/posts";
 
 import PostEditor from "../../post-editor";
 
@@ -22,10 +30,12 @@ export default async function EditPostPage(
   await requireAdmin();
   const { id } = await props.params;
 
-  const [post, sections, storageUsed] = await Promise.all([
+  const [post, sections, storageUsed, seriesList, nav] = await Promise.all([
     getPostById(id),
     getPostSections(),
     getStorageUsed(),
+    getSeriesList(),
+    getSeriesNav(id),
   ]);
 
   if (!post) notFound();
@@ -68,7 +78,11 @@ export default async function EditPostPage(
                   ? youTubeThumb(item.youtube_id)
                   : null,
           })),
+          seriesId: nav?.series_id ?? null,
+          seriesOrder: nav?.series_order ?? null,
         }}
+        seriesList={seriesList}
+        seriesCovers={seriesCoverMap(seriesList)}
       />
 
       <Link

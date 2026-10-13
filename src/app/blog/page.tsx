@@ -12,6 +12,11 @@ import {
   getPostSections,
   postImageUrl,
 } from "@/lib/posts";
+import {
+  episodeLabel,
+  groupFeed,
+  type SeriesGroup,
+} from "@/lib/series-rules";
 import type { PostCard } from "@/lib/supabase/types";
 
 import BlogHeader from "./blog-header";
@@ -108,6 +113,72 @@ function Card({ post }: { post: PostCard }) {
   );
 }
 
+/**
+ * การ์ดซีรีส์ ใบเดียวแทนทุกตอน กดแล้วไปหน้าซีรีส์
+ * วันที่กับหมวดเอาจากตอนล่าสุด ให้รู้ว่าซีรีส์นี้ยังเดินอยู่
+ */
+function SeriesCard({ series }: { series: SeriesGroup }) {
+  const latest = series.latest;
+  const date = thaiShortDate(
+    (latest.published_at ?? latest.created_at).slice(0, 10),
+  );
+
+  const cover =
+    series.cover?.cover_kind === "image"
+      ? postImageUrl(series.cover.cover_url)
+      : series.cover?.cover_kind === "youtube" && series.cover.cover_youtube
+        ? youTubeThumb(series.cover.cover_youtube)
+        : null;
+
+  const count = series.episodes.length;
+
+  return (
+    <li>
+      <Link
+        href={`/blog/series/${series.slug}`}
+        className="flex gap-4 rounded-2xl border border-border bg-surface p-4 transition hover:border-accent active:scale-[0.99]"
+      >
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            className="h-20 w-20 shrink-0 rounded-xl border border-border object-cover sm:h-24 sm:w-24"
+          />
+        ) : null}
+
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+            <span>{date}</span>
+            <span aria-hidden>·</span>
+            <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-accent-strong">
+              {latest.section_title}
+            </span>
+            <span className="rounded-full border border-club-line px-2.5 py-0.5 text-club-line">
+              ซีรีส์ · {count} ตอน
+            </span>
+          </div>
+
+          <h2 className="font-display text-lg font-medium">{series.title}</h2>
+
+          <p className="line-clamp-2 text-sm text-muted">
+            ล่าสุด{" "}
+            <span className="text-accent-strong">
+              {episodeLabel(series.unit, latest.series_order)}
+            </span>{" "}
+            · {latest.title}
+          </p>
+        </div>
+
+        <span aria-hidden className="self-center text-muted">
+          →
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export default async function BlogPage(props: PageProps<"/blog">) {
   const params = await props.searchParams;
   const viewer = await getViewer();
@@ -118,11 +189,14 @@ export default async function BlogPage(props: PageProps<"/blog">) {
   const [content, sections, posts] = await Promise.all([
     getBlogContent(),
     getPostSections(),
-    getPostFeed(asked),
+    // ดึงเผื่อไว้ 100 ใบ เพราะตอนของซีรีส์ถูกยุบเหลือการ์ดเดียว
+    getPostFeed(asked, 100),
   ]);
 
   // ใส่ section มั่วๆ มาก็ให้เป็นทั้งหมดเงียบๆ ไม่ต้องขึ้น error
   const selected = sections.some((row) => row.slug === asked) ? asked : null;
+
+  const items = groupFeed(posts);
 
   return (
     <div className="space-y-8">
@@ -164,9 +238,13 @@ export default async function BlogPage(props: PageProps<"/blog">) {
         </div>
       ) : (
         <ul className="space-y-3">
-          {posts.map((post) => (
-            <Card key={post.id} post={post} />
-          ))}
+          {items.map((item) =>
+            item.kind === "series" ? (
+              <SeriesCard key={`series-${item.series.slug}`} series={item.series} />
+            ) : (
+              <Card key={item.post.id} post={item.post} />
+            ),
+          )}
         </ul>
       )}
     </div>

@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/auth";
-import { getPostSections, getStorageUsed } from "@/lib/posts";
+import {
+  getPostSections,
+  getSeriesList,
+  getStorageUsed,
+  seriesCoverMap,
+} from "@/lib/posts";
 
 import PostEditor from "../post-editor";
 
@@ -10,13 +15,20 @@ export const metadata: Metadata = {
   title: "เขียนโพสต์",
 };
 
-export default async function NewPostPage() {
+export default async function NewPostPage(props: PageProps<"/blog/new">) {
   await requireAdmin();
 
-  const [sections, storageUsed] = await Promise.all([
+  const params = await props.searchParams;
+
+  const [sections, storageUsed, seriesList] = await Promise.all([
     getPostSections(),
     getStorageUsed(),
+    getSeriesList(),
   ]);
+
+  // มาจากปุ่ม "+ เขียนตอนถัดไป" ในหน้าซีรีส์ ตั้งซีรีส์กับเลขตอนไว้ให้เลย
+  const askedSeries = typeof params.series === "string" ? params.series : null;
+  const startSeries = seriesList.find((item) => item.id === askedSeries) ?? null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -41,7 +53,11 @@ export default async function NewPostPage() {
           section: sections[0]?.slug ?? "blog",
           visibility: "public",
           media: [],
+          seriesId: startSeries?.id ?? null,
+          seriesOrder: startSeries ? (startSeries.max_order ?? 0) + 1 : null,
         }}
+        seriesList={seriesList}
+        seriesCovers={seriesCoverMap(seriesList)}
       />
 
       <Link

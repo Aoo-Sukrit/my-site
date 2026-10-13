@@ -6,6 +6,10 @@ import type {
   PostCard,
   PostDetail,
   PostSection,
+  PostSeries,
+  SeriesEpisode,
+  SeriesNav,
+  SeriesOption,
 } from "./supabase/types";
 
 /**
@@ -50,6 +54,48 @@ export async function getPostByToken(
   const { data } = await supabase.rpc("post_by_token", { p_token: token });
   const rows = (data ?? []) as PostDetail[];
   return rows[0] ?? null;
+}
+
+/** หัวซีรีส์ ได้ null ถ้าไม่มีซีรีส์นี้ หรือคนดูไม่เห็นตอนไหนเลย */
+export async function getSeries(slug: string): Promise<PostSeries | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("post_series_get", { p_slug: slug });
+  const rows = (data ?? []) as PostSeries[];
+  return rows[0] ?? null;
+}
+
+/** ตอนที่คนดูเห็นได้ เรียงตามเลขตอน */
+export async function getSeriesEpisodes(
+  slug: string,
+): Promise<SeriesEpisode[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("post_series_episodes", { p_slug: slug });
+  return (data ?? []) as SeriesEpisode[];
+}
+
+/** โพสต์นี้อยู่ซีรีส์ไหน ตอนที่เท่าไหร่ ตอนก่อน/ถัดไปคืออะไร */
+export async function getSeriesNav(postId: string): Promise<SeriesNav | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("post_series_nav", { p_post_id: postId });
+  const rows = (data ?? []) as SeriesNav[];
+  return rows[0] ?? null;
+}
+
+/** ทุกซีรีส์ ไว้ทำ dropdown ในหน้าเขียนโพสต์ คนที่ไม่ใช่แอดมินได้ว่าง */
+export async function getSeriesList(): Promise<SeriesOption[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("post_series_list");
+  return (data ?? []) as SeriesOption[];
+}
+
+/** ที่อยู่ไฟล์รูปปกซีรีส์ → URL เต็ม ให้หน้าเขียนโพสต์โชว์ตัวอย่างได้ */
+export function seriesCoverMap(list: SeriesOption[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const item of list) {
+    const src = postImageUrl(item.cover_url);
+    if (item.cover_url && src) map[item.cover_url] = src;
+  }
+  return map;
 }
 
 export async function getStorageUsed(): Promise<number> {

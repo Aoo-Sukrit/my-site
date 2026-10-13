@@ -381,6 +381,13 @@ export type PostCard = {
   cover_kind: "image" | "youtube" | null;
   cover_url: string | null;
   cover_youtube: string | null;
+  /** ซีรีส์ที่โพสต์นี้อยู่ (20261013090000_post_series.sql) ว่างคือโพสต์เดี่ยว */
+  series_slug: string | null;
+  series_title: string | null;
+  series_order: number | null;
+  series_unit: string | null;
+  /** รูปปกที่ตั้งให้ซีรีส์ ที่อยู่ไฟล์ในบัคเก็ต ว่างได้ */
+  series_cover: string | null;
 };
 
 /** โพสต์เต็ม มาจาก post_by_id() หรือ post_by_token() */
@@ -398,6 +405,69 @@ export type PostDetail = {
   /** คืนเฉพาะแอดมิน หรือตอนเข้ามาทางลิงก์ลับ */
   share_token: string | null;
   media: PostMedia[];
+};
+
+// ---------------------------------------------------------------------------
+//  ซีรีส์ของโพสต์ (20261013090000_post_series.sql)
+//  ซีรีส์ไม่มีสิทธิ์การมองเห็นของตัวเอง แต่ละตอนใช้ของโพสต์ตัวเอง
+// ---------------------------------------------------------------------------
+
+/** หัวซีรีส์ มาจาก post_series_get() */
+export type PostSeries = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  /** ที่อยู่ไฟล์ในบัคเก็ต post-media ว่างได้ */
+  cover_url: string | null;
+  /** คำเรียกตอน เช่น "Week" */
+  unit_label: string;
+  /** จำนวนตอนที่คนดูคนนี้เห็นได้ */
+  episode_count: number;
+};
+
+/** หนึ่งตอนในหน้าซีรีส์ มาจาก post_series_episodes() */
+export type SeriesEpisode = {
+  id: string;
+  title: string;
+  body: string;
+  series_order: number;
+  visibility: string;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+  media_count: number;
+  cover_kind: "image" | "youtube" | null;
+  cover_url: string | null;
+  cover_youtube: string | null;
+};
+
+/** แถบซีรีส์บนหน้าโพสต์ กับตอนก่อน/ถัดไป มาจาก post_series_nav() */
+export type SeriesNav = {
+  series_id: string;
+  series_slug: string;
+  series_title: string;
+  unit_label: string;
+  series_order: number;
+  prev_id: string | null;
+  prev_title: string | null;
+  prev_order: number | null;
+  next_id: string | null;
+  next_title: string | null;
+  next_order: number | null;
+};
+
+/** ตัวเลือกใน dropdown หน้าเขียนโพสต์ มาจาก post_series_list() แอดมินเท่านั้น */
+export type SeriesOption = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  cover_url: string | null;
+  unit_label: string;
+  post_count: number;
+  /** เลขตอนสูงสุดที่มีอยู่ ไว้เดาเลขตอนถัดไปให้ */
+  max_order: number | null;
 };
 
 // ---------------------------------------------------------------------------
