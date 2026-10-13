@@ -82,12 +82,15 @@ export default function MediaGallery({ items }: { items: GalleryItem[] }) {
                 onClick={() =>
                   setLightbox(images.findIndex((row) => row.id === item.id))
                 }
-                className="block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-surface"
+                className="block w-full cursor-zoom-in rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
               >
-                {/* รูปแนวตั้งจัดๆ อย่างแคปหน้าจอมือถือ ถ้าปล่อยเต็มความกว้าง
-                    จะสูงกว่าจอหลายเท่าจนต้องถ่อเลื่อนผ่านทีละรูป
-                    จำกัดความสูงไว้ราวสามในสี่ของจอ และใช้ object-contain
-                    จะได้ไม่ตัดรูป กดดูเต็มจอยังเห็นครบเหมือนเดิม */}
+                {/* เต็มความกว้างคอลัมน์ สูงตามสัดส่วนจริงของรูป ไม่มีกรอบ ขอบ
+                    หรือพื้นหลังครอบ รูปสรุปบทเรียนเป็น PNG พื้นโปร่งใส
+                    ถ้ามีพื้นการ์ดรองไว้จะเห็นเป็นกล่องสีทับพื้นเว็บ
+                    (ของเดิมจำกัดสูง 75vh + object-contain รูปแนวตั้งเลยถูกบีบ
+                    เหลือราว 60% ของความกว้าง)
+                    width/height จริงจากฐานข้อมูลทำให้เบราว์เซอร์จองที่ไว้ถูกสัดส่วน
+                    ตั้งแต่ก่อนรูปโหลดเสร็จ หน้าไม่กระโดด */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.src}
@@ -95,7 +98,7 @@ export default function MediaGallery({ items }: { items: GalleryItem[] }) {
                   width={item.width ?? undefined}
                   height={item.height ?? undefined}
                   loading="lazy"
-                  className="mx-auto block max-h-[75vh] w-full object-contain"
+                  className="block h-auto w-full max-w-full"
                 />
               </button>
               {item.caption ? (

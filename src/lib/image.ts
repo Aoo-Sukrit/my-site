@@ -84,6 +84,47 @@ export async function shrinkToJpeg(
   throw new Error("ย่อรูปให้เล็กพอไม่ได้ ลองเลือกรูปอื่น");
 }
 
+export function toPngBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/png");
+  });
+}
+
+/**
+ * ย่อรูปแล้วเก็บเป็น PNG คงพื้นโปร่งใสไว้ ใช้กับรูปในโพสต์ที่ต้นทางเป็น PNG
+ * เช่นรูปสรุปบทเรียนที่ทำพื้นโปร่งใสไว้ให้ดูได้ทั้งธีมสว่างและธีมมืด
+ *
+ * ถ้าเขียนเป็น JPEG แบบ shrinkToJpeg() ส่วนที่โปร่งใสจะกลายเป็นสีดำ
+ * เพราะ JPEG ไม่มีช่องความโปร่งใส
+ *
+ * PNG ไม่มีค่าคุณภาพให้ลด ถ้าไฟล์ใหญ่เกินเพดานจึงลดได้ทางเดียวคือย่อขนาดภาพ
+ * ทีละ 15% จนกว่าจะเข้าเพดาน
+ */
+export async function shrinkToPng(
+  file: Blob,
+  { maxEdge = 1600, maxBytes = MAX_UPLOAD_BYTES } = {},
+): Promise<Blob> {
+  const bitmap = await decodeOriented(file);
+
+  try {
+    let edge = maxEdge;
+
+    for (let round = 0; round < 8; round += 1) {
+      const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const blob = await toPngBlob(drawToCanvas(bitmap, width, height));
+      if (blob && blob.size <= maxBytes) return blob;
+
+      edge = Math.round(Math.min(edge, Math.max(width, height)) * 0.85);
+    }
+  } finally {
+    bitmap.close();
+  }
+
+  throw new Error("ย่อรูป PNG ให้เล็กพอไม่ได้ ลองย่อรูปก่อนอัป");
+}
+
 /**
  * รูปโปรไฟล์ขนาดเล็กสำหรับรูปสตอรี่
  *

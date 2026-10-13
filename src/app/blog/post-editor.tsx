@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import Alert from "@/components/club/alert";
-import { shrinkToJpeg } from "@/lib/image";
+import { shrinkToJpeg, shrinkToPng } from "@/lib/image";
 import {
   POST_BUCKET,
   POST_CAPTION_MAX,
@@ -121,24 +121,36 @@ export default function PostEditor({
     try {
       for (const file of files) {
         try {
-          // ย่อในเบราว์เซอร์ก่อนเสมอ ด้านยาวสุด 1600 แล้วเขียนใหม่เป็น JPEG
-          // ซึ่งทิ้ง EXIF ไปเองด้วย แต่หมุนภาพให้ถูกด้านก่อนแล้ว
-          const blob = await shrinkToJpeg(file, {
-            maxEdge: POST_IMAGE_MAX_EDGE,
-            maxBytes: 1_500_000,
-            quality: POST_IMAGE_QUALITY,
-          });
+          // ย่อในเบราว์เซอร์ก่อนเสมอ ด้านยาวสุด 1600 ซึ่งทิ้ง EXIF ไปเองด้วย
+          // แต่หมุนภาพให้ถูกด้านก่อนแล้ว
+          //
+          // PNG เก็บเป็น PNG เหมือนเดิม เพื่อให้พื้นโปร่งใสยังโปร่งใส (รูปสรุป
+          // ที่ทำมาให้ดูได้ทั้งธีมสว่างและมืด) ถ้าแปลงเป็น JPEG พื้นจะกลายเป็นดำ
+          // ไฟล์ชนิดอื่นเขียนใหม่เป็น JPEG เหมือนเดิม
+          // เพดาน PNG 1.9MB ให้ต่ำกว่าเพดานบัคเก็ต post-media (2MB) นิดหน่อย
+          const isPng = file.type === "image/png";
+          const blob = isPng
+            ? await shrinkToPng(file, {
+                maxEdge: POST_IMAGE_MAX_EDGE,
+                maxBytes: 1_900_000,
+              })
+            : await shrinkToJpeg(file, {
+                maxEdge: POST_IMAGE_MAX_EDGE,
+                maxBytes: 1_500_000,
+                quality: POST_IMAGE_QUALITY,
+              });
 
           const bitmap = await createImageBitmap(blob);
           const width = bitmap.width;
           const height = bitmap.height;
           bitmap.close();
 
-          const path = `${postId}/${globalThis.crypto.randomUUID()}.jpg`;
+          const extension = isPng ? "png" : "jpg";
+          const path = `${postId}/${globalThis.crypto.randomUUID()}.${extension}`;
           const { error: uploadError } = await supabase.storage
             .from(POST_BUCKET)
             .upload(path, blob, {
-              contentType: "image/jpeg",
+              contentType: isPng ? "image/png" : "image/jpeg",
               cacheControl: "31536000",
               upsert: false,
             });
