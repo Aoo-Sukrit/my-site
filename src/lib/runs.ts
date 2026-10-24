@@ -21,7 +21,7 @@ export const EDIT_WINDOW_HOURS = 24;
 export async function getCurrentRound(): Promise<Round | null> {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("current_round");
-  return (data as Round | null) ?? null;
+  return roundOrNull(data);
 }
 
 /**
@@ -35,7 +35,18 @@ export async function getRoundByMonth(
   const { data } = await supabase.rpc("round_by_month", {
     target_month: `${monthKey}-01`,
   });
-  return (data as Round | null) ?? null;
+  return roundOrNull(data);
+}
+
+/**
+ * ฟังก์ชันที่ประกาศ returns public.rounds (แถวเดียว) พอหาไม่เจอ PostgREST
+ * ไม่ได้ส่ง null กลับมา แต่ส่งแถวที่ทุกช่องเป็น null แทน ต้องเช็ก id เอง
+ * ไม่งั้นหน้าเว็บจะเข้าใจว่ามีรอบ แล้วพังตอนเรียก round.month.slice()
+ * (หน้าแอดมินเคยล่มแบบนี้หลังลบรอบเดือนกันยายนทิ้ง)
+ */
+function roundOrNull(data: unknown): Round | null {
+  const round = data as Round | null;
+  return round?.id ? round : null;
 }
 
 /** เดือนที่เลือกดูได้ ใหม่ไปเก่า ไม่เลยเดือนปัจจุบัน */
@@ -65,7 +76,7 @@ export async function getRoundById(roundId: string): Promise<Round | null> {
 export async function getRoundForDate(isoDate: string): Promise<Round | null> {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("round_for_date", { target: isoDate });
-  return (data as Round | null) ?? null;
+  return roundOrNull(data);
 }
 
 export async function getLeaderboard(
